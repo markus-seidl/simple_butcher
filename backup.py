@@ -17,8 +17,8 @@ BLOCKSIZE = "512K"
 TAR = "/usr/local/bin/gtar"
 SEVEN_Z = "/usr/local/bin/7z"
 
-TAR = "/usr/bin/tar"
-SEVEN_Z = "/usr/bin/7z"
+# TAR = "/usr/bin/tar"
+# SEVEN_Z = "/usr/bin/7z"
 MBUFFER = "/usr/bin/mbuffer"
 
 COMPRESS_SEVEN_Z_OPTS = ' a -m0=brotli -mmt=9 -p"%s" '
@@ -82,7 +82,7 @@ def do_message(bc: BackupConfig, com: MyZmq, msg, tar_output_file: str, archive_
     # Compression Command
     compression_timer_start = time.time()
     output_file = TEMP_DIR + "/%09i.7zenc" % archive_volume[1]
-    compression_cmd = SEVEN_Z + COMPRESS_SEVEN_Z_OPTS + output_file + " " + im_file
+    compression_cmd = SEVEN_Z + (COMPRESS_SEVEN_Z_OPTS % bc.password) + output_file + " " + im_file
     compression_process = subprocess.Popen(compression_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # Fill database
@@ -101,7 +101,8 @@ def do_message(bc: BackupConfig, com: MyZmq, msg, tar_output_file: str, archive_
             f.write(os.linesep)
 
     compression_process.wait()
-    print("\tCompression took: %3.1fs" % (time.time() - compression_timer_start))
+    print("\tCompression took: %3.1fs size diff %f" % (
+    time.time() - compression_timer_start, os.path.getsize(im_file) - os.path.getsize(output_file)))
 
     os.remove(im_file)
 
