@@ -10,15 +10,15 @@ import subprocess
 
 TEMP_DIR = "./temp"
 TAPE = "/dev/nst0"
-DATABASE_FILE = "backup.txt"
+DATABASE_FILE = "backup_db.txt"
 VOLUME_NAME = datetime.datetime.now().isoformat()
 BLOCKSIZE = "512K"
 
 TAR = "/usr/local/bin/gtar"
 SEVEN_Z = "/usr/local/bin/7z"
 
-# TAR = "/usr/bin/tar"
-# SEVEN_Z = "/usr/bin/7z"
+TAR = "/usr/bin/tar"
+SEVEN_Z = "/usr/bin/7z"
 MBUFFER = "/usr/bin/mbuffer"
 
 COMPRESS_SEVEN_Z_OPTS = ' a -m0=brotli -mmt=9 -p"%s" '
