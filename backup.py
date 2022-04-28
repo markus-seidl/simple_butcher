@@ -18,7 +18,7 @@ TAR = "/usr/local/bin/gtar"
 SEVEN_Z = "/usr/local/bin/7z"
 
 TAR = "/usr/bin/tar"
-SEVEN_Z = "/usr/bin/7z"
+SEVEN_Z = "./7zz"
 MBUFFER = "/usr/bin/mbuffer"
 
 COMPRESS_SEVEN_Z_OPTS = ' a -m0=brotli -mmt=9 -p"%s" '
