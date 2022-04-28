@@ -102,7 +102,7 @@ def do_message(bc: BackupConfig, com: MyZmq, msg, tar_output_file: str, archive_
 
     s_out, s_err = compression_process.communicate()
     if compression_process.returncode != 0:
-        raise s_err.decode("UTF-8")
+        raise OSError(s_err.decode("UTF-8"))
 
     print(
         "\tCompression took: %3.1fs size diff %f" % (
