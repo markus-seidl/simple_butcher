@@ -3,22 +3,38 @@ import sys
 import threading
 import time
 import shutil
+import datetime
 
 import zmq
 import subprocess
 
 TEMP_DIR = "./temp2"
-SOURCE_DIR = "./temp"
-DEST_DIR = "./dest"
+TAPE = "/dev/nst0"
 DATABASE_FILE = "backup.txt"
+VOLUME_NAME = datetime.datetime.now().isoformat()
+BLOCKSIZE = "512K"
 
 TAR = "/usr/local/bin/gtar"
 SEVEN_Z = "/usr/local/bin/7z"
-SEVEN_Z_OPTS = ' a -m0=brotli -mmt=9 -p"dasisteintest" '
-TAR_BACKUP_FULL_OPTS = 'cvM -L10M --new-volume-script="python archive_finalizer.py" --label="into-the-unknown" '
+
+TAR = "/usr/bin/tar"
+SEVEN_Z = "/usr/bin/7z"
+MBUFFER = "/usr/bin/mbuffer"
+
+COMPRESS_SEVEN_Z_OPTS = ' a -m0=brotli -mmt=9 -p"%s" '
+COMPRESS_TAR_BACKUP_FULL_OPTS = f'cvM -L10M --new-volume-script="python archive_finalizer.py" --label="{VOLUME_NAME}" '
+COMPRESS_WRITE_TO_TAPE_OPTS = " -i %s -P 90 -l ./mbuffer.log -o " + TAPE + "  -s " + BLOCKSIZE
+
+TAPEINFO = "/usr/sbin/tapeinfo -f " + TAPE
 
 
 #  -g, --listed-incremental=FILE
+
+class BackupConfig:
+    def __init__(self, password: str, src_dir: str):
+        self.password = password
+        self.src_dir = src_dir
+
 
 class MyZmq:
     def __init__(self):
@@ -40,7 +56,21 @@ def wait_for_process_finish(process: subprocess.Popen):
     process.wait()
 
 
-def do_message(com, msg, tar_output_file, archive_volume):
+def block_position():
+    tape_process = subprocess.Popen(
+        TAPEINFO, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    s_out, s_err = tape_process.communicate()
+
+    lines = s_out.decode("UTF-8").split(os.linesep)
+    for line in lines:
+        if "Block Position:" in line:
+            return int(str(line).replace("Block Position:", ""))
+
+    return 0
+
+
+def do_message(bc: BackupConfig, com: MyZmq, msg, tar_output_file: str, archive_volume: (int, int)) -> (int, int):
     print("\tArchive is ready...")
 
     im_file = TEMP_DIR + "/files.tar.%09i" % archive_volume[1]
@@ -51,8 +81,8 @@ def do_message(com, msg, tar_output_file, archive_volume):
 
     # Compression Command
     compression_timer_start = time.time()
-    output_file = DEST_DIR + "/%09i.7zenc" % archive_volume[1]
-    compression_cmd = SEVEN_Z + SEVEN_Z_OPTS + output_file + " " + im_file
+    output_file = TEMP_DIR + "/%09i.7zenc" % archive_volume[1]
+    compression_cmd = SEVEN_Z + COMPRESS_SEVEN_Z_OPTS + output_file + " " + im_file
     compression_process = subprocess.Popen(compression_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # Fill database
@@ -87,9 +117,15 @@ def do_message(com, msg, tar_output_file, archive_volume):
         return archive_volume[0], archive_volume[1] + 1
 
 
-def backup():
+def backup(bc: BackupConfig):
+    with open(DATABASE_FILE, "a+") as f:
+        f.write(os.linesep)
+        f.write("Backup of " + VOLUME_NAME)
+        f.write(os.linesep)
+        f.write(os.linesep)
+
     tar_output_file = TEMP_DIR + "/tar_output"
-    tar_cmd = TAR + " " + TAR_BACKUP_FULL_OPTS + " -f " + tar_output_file + " " + SOURCE_DIR
+    tar_cmd = TAR + " " + COMPRESS_TAR_BACKUP_FULL_OPTS + " -f " + tar_output_file + " " + bc.src_dir
     tar_process = subprocess.Popen(tar_cmd, shell=True)
 
     tar_thread = threading.Thread(target=wait_for_process_finish, args=(tar_process,))
@@ -102,7 +138,7 @@ def backup():
         try:
             msg = com.socket.recv(flags=zmq.DONTWAIT)
 
-            archive_volume = do_message(com, msg, tar_output_file, archive_volume)
+            archive_volume = do_message(bc, com, msg, tar_output_file, archive_volume)
         except zmq.error.Again:
             # No msg available
             time.sleep(1)  # Save CPU as we don't have anything to do then wait
@@ -111,4 +147,10 @@ def backup():
 
 
 if __name__ == '__main__':
-    backup()
+    cmd = sys.argv[1]
+
+    if "backup" == cmd:
+        bc = BackupConfig(sys.argv[2], sys.argv[3])
+        backup(bc)
+    elif "block_position" == cmd:
+        print(block_position())
