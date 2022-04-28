@@ -23,7 +23,7 @@ MBUFFER = "/usr/bin/mbuffer"
 
 COMPRESS_SEVEN_Z_OPTS = ' a -m0=brotli -mmt=9 -p"%s" '
 COMPRESS_TAR_BACKUP_FULL_OPTS = f'cvM -L10M --new-volume-script="python archive_finalizer.py" --label="{VOLUME_NAME}" '
-COMPRESS_WRITE_TO_TAPE_OPTS = " -i %s -P 90 -l ./mbuffer.log -o " + TAPE + "  -s " + BLOCKSIZE
+COMPRESS_WRITE_TO_TAPE_OPTS = MBUFFER + " -i %s -P 90 -l ./mbuffer.log -o " + TAPE + "  -s " + BLOCKSIZE
 
 TAPEINFO = "/usr/sbin/tapeinfo -f " + TAPE
 
@@ -106,11 +106,15 @@ def do_message(bc: BackupConfig, com: MyZmq, msg, tar_output_file: str, archive_
     os.remove(im_file)
 
     # Determine if next tape is necessary
+    print("Block position (before writing): " + str(block_position()))
 
     # Put on tape
     print("Write to Tape")
+    subprocess.check_call(COMPRESS_WRITE_TO_TAPE_OPTS, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # Determine if next tape is necessary
+    print("Block position (before writing): " + str(block_position()))
+
     if False:
         return archive_volume[0] + 1, archive_volume[1] + 1
     else:
