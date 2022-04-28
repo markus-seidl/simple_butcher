@@ -8,7 +8,7 @@ import datetime
 import zmq
 import subprocess
 
-TEMP_DIR = "./temp2"
+TEMP_DIR = "./temp"
 TAPE = "/dev/nst0"
 DATABASE_FILE = "backup.txt"
 VOLUME_NAME = datetime.datetime.now().isoformat()
