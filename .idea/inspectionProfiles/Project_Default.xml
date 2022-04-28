@@ -1,0 +1,45 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyCompatibilityInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ourVersions">
+        <value>
+          <list size="2">
+            <item index="0" class="java.lang.String" itemvalue="3.7" />
+            <item index="1" class="java.lang.String" itemvalue="3.8" />
+          </list>
+        </value>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="false" level="WARNING" enabled_by_default="false">
+      <option name="ignoredPackages">
+        <value>
+          <list size="15">
+            <item index="0" class="java.lang.String" itemvalue="aws-cdk-aws-autoscaling" />
+            <item index="1" class="java.lang.String" itemvalue="aws-cdk-aws-logs" />
+            <item index="2" class="java.lang.String" itemvalue="aws-cdk-aws-sam" />
+            <item index="3" class="java.lang.String" itemvalue="aws-cdk-aws-cloudwatch-actions" />
+            <item index="4" class="java.lang.String" itemvalue="aws-cdk-aws-codebuild" />
+            <item index="5" class="java.lang.String" itemvalue="aws-cdk-aws-apigateway" />
+            <item index="6" class="java.lang.String" itemvalue="aws-cdk-aws-ec2" />
+            <item index="7" class="java.lang.String" itemvalue="aws-cdk-aws-lambda-event-sources" />
+            <item index="8" class="java.lang.String" itemvalue="aws-cdk-aws-cloudwatch" />
+            <item index="9" class="java.lang.String" itemvalue="aws-cdk-aws-s3" />
+            <item index="10" class="java.lang.String" itemvalue="aws-cdk-aws-cloudfront" />
+            <item index="11" class="java.lang.String" itemvalue="aws-cdk-core" />
+            <item index="12" class="java.lang.String" itemvalue="aws-cdk-aws-events-targets" />
+            <item index="13" class="java.lang.String" itemvalue="aws-cdk-aws-kms" />
+            <item index="14" class="java.lang.String" itemvalue="aws-cdk-aws-lambda" />
+          </list>
+        </value>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="false" level="WARNING" enabled_by_default="false">
+      <option name="ignoredIdentifiers">
+        <list>
+          <option value="config" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
