@@ -110,7 +110,9 @@ def do_message(bc: BackupConfig, com: MyZmq, msg, tar_output_file: str, archive_
 
     # Put on tape
     print("Write to Tape")
-    subprocess.check_call(COMPRESS_WRITE_TO_TAPE_OPTS % output_file, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    subprocess.check_call(
+        COMPRESS_WRITE_TO_TAPE_OPTS % output_file, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
 
     # Determine if next tape is necessary
     print("Block position (before writing): " + str(block_position()))
