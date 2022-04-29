@@ -34,7 +34,7 @@ elif sys.platform == "darwin":
 
 COMPRESS_SEVEN_Z_OPTS = ' a -p"%s" '
 COMPRESS_ZSTD_OPTS = ' -4 -T0 -v %s -o %s '
-COMPRESS_TAR_BACKUP_FULL_OPTS = f'cvM -L1M --new-volume-script="python archive_finalizer.py" --label="{VOLUME_NAME}" '
+COMPRESS_TAR_BACKUP_FULL_OPTS = f'cvM -L10G --new-volume-script="python archive_finalizer.py" --label="{VOLUME_NAME}" '
 COMPRESS_WRITE_TO_TAPE_OPTS = " -i %s -P 90 -l ./mbuffer.log -o " + TAPE + "  -s " + BLOCKSIZE
 
 
