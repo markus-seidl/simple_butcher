@@ -14,26 +14,36 @@ DATABASE_FILE = "backup_db.txt"
 VOLUME_NAME = datetime.datetime.now().isoformat()
 BLOCKSIZE = "512K"
 
-TAR = "/usr/local/bin/gtar"
-SEVEN_Z = "/usr/local/bin/7z"
+OPENSSL = "/usr/bin/openssl"
+OPENSSL_OPTS = ' aes-256-cbc -iter 100000 -pass pass:"%s" -in %s -out %s '
 
-TAR = "/usr/bin/tar"
-SEVEN_Z = "./7zz"
-MBUFFER = "/usr/bin/mbuffer"
+if sys.platform == "linux":
+    TAR = "/usr/bin/tar"
+    SEVEN_Z = "/usr/bin/7z"
+    MBUFFER = "/usr/bin/mbuffer"
+    TAPEINFO = "/usr/sbin/tapeinfo -f " + TAPE
+    ZSTD = "/usr/bin/zstd"
+elif sys.platform == "darwin":
+    TAR = "/usr/local/bin/gtar"
+    SEVEN_Z = "/usr/local/bin/7z"
+    ZSTD = "/usr/local/bin/zstd"
+    MBUFFER = None
+    TAPEINFO = None
 
 COMPRESS_SEVEN_Z_OPTS = ' a -p"%s" '
+COMPRESS_ZSTD_OPTS = ' -5 -v %s -o %s '
 COMPRESS_TAR_BACKUP_FULL_OPTS = f'cvM -L10G --new-volume-script="python archive_finalizer.py" --label="{VOLUME_NAME}" '
-COMPRESS_WRITE_TO_TAPE_OPTS = MBUFFER + " -i %s -P 90 -l ./mbuffer.log -o " + TAPE + "  -s " + BLOCKSIZE
-
-TAPEINFO = "/usr/sbin/tapeinfo -f " + TAPE
+COMPRESS_WRITE_TO_TAPE_OPTS = " -i %s -P 90 -l ./mbuffer.log -o " + TAPE + "  -s " + BLOCKSIZE
 
 
 #  -g, --listed-incremental=FILE
+
 
 class BackupConfig:
     def __init__(self, password: str, src_dir: str):
         self.password = password
         self.src_dir = src_dir
+        self.compression_type = "zstd"
 
 
 class MyZmq:
@@ -57,6 +67,9 @@ def wait_for_process_finish(process: subprocess.Popen):
 
 
 def block_position():
+    if not TAPEINFO:
+        return -1
+
     tape_process = subprocess.Popen(
         TAPEINFO, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
@@ -67,7 +80,7 @@ def block_position():
         if "Block Position:" in line:
             return int(str(line).replace("Block Position:", ""))
 
-    return 0
+    return -1
 
 
 def do_message(bc: BackupConfig, com: MyZmq, msg, tar_output_file: str, archive_volume: (int, int)) -> (int, int):
@@ -77,16 +90,88 @@ def do_message(bc: BackupConfig, com: MyZmq, msg, tar_output_file: str, archive_
 
     shutil.move(tar_output_file, im_file)
 
-    com.socket.send(b"CONTINUE")
+    if com:
+        com.socket.send(b"CONTINUE")
+
+    update_database(archive_volume, im_file)
 
     # Compression Command
     compression_timer_start = time.time()
-    output_file = TEMP_DIR + "/%09i.7zenc" % archive_volume[1]
-    compression_cmd = SEVEN_Z + (COMPRESS_SEVEN_Z_OPTS % bc.password) + output_file + " " + im_file
-    # print(compression_cmd)
-    compression_process = subprocess.Popen(compression_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output_file = compress_archive(bc, im_file, archive_volume)
+    print(
+        "\tCompression took: %3.1fs size diff %f" % (
+            time.time() - compression_timer_start, os.path.getsize(im_file) - os.path.getsize(output_file))
+    )
 
-    # Fill database
+    os.remove(im_file)
+
+    # Determine if next tape is necessary
+    print("Block position (before writing): " + str(block_position()))
+
+    # Put on tape
+    if MBUFFER:
+        print("Write to Tape")
+        subprocess.check_call(
+            MBUFFER + COMPRESS_WRITE_TO_TAPE_OPTS % output_file, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        os.remove(output_file)
+
+    # Determine if next tape is necessary
+    print("Block position (before writing): " + str(block_position()))
+
+    if False:
+        return archive_volume[0] + 1, archive_volume[1] + 1
+    else:
+        return archive_volume[0], archive_volume[1] + 1
+
+
+def compress_archive(bc, im_file, archive_volume):
+    if bc.compression_type == "7z":
+        output_file = TEMP_DIR + "/%09i.7zenc" % archive_volume[1]
+
+        compression_cmd = SEVEN_Z + (COMPRESS_SEVEN_Z_OPTS % bc.password) + output_file + " " + im_file
+        compression_process = subprocess.Popen(
+            compression_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+
+        s_out, s_err = compression_process.communicate()
+        if compression_process.returncode != 0:
+            raise OSError(s_err.decode("UTF-8"))
+
+        return output_file
+    elif bc.compression_type == "zstd":
+        output_file = TEMP_DIR + "/%09i.tar.zstd" % archive_volume[1]
+
+        compression_cmd = ZSTD + (COMPRESS_ZSTD_OPTS % (im_file, output_file))
+        compression_process = subprocess.Popen(
+            compression_cmd, shell=True, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+
+        s_out, s_err = compression_process.communicate()
+        if compression_process.returncode != 0:
+            raise OSError(s_err.decode("UTF-8"))
+
+        im_file2 = output_file
+        output_file = TEMP_DIR + "/%09i.tar.zstd.enc" % archive_volume[1]
+
+        encryption_cmd = OPENSSL + (OPENSSL_OPTS % (bc.password, im_file2, output_file))
+        encryption_process = subprocess.Popen(
+            encryption_cmd, shell=True, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+
+        s_out, s_err = encryption_process.communicate()
+        if encryption_process.returncode != 0:
+            raise OSError(s_err.decode("UTF-8"))
+
+        return output_file
+
+    raise ValueError("Unknown compression_type")
+
+
+def update_database(archive_volume, im_file):
+    """Writes contents of im_file to the backup_db.txt using archive_volume information"""
     with open(DATABASE_FILE, "a+") as f:
         list_process = subprocess.Popen(
             TAR + " tvf " + im_file, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -101,38 +186,10 @@ def do_message(bc: BackupConfig, com: MyZmq, msg, tar_output_file: str, archive_
             f.write("%09i\t%09i\t%s" % (archive_volume[0], archive_volume[1], line))
             f.write(os.linesep)
 
-    s_out, s_err = compression_process.communicate()
-    if compression_process.returncode != 0:
-        raise OSError(s_err.decode("UTF-8"))
-
-    print(
-        "\tCompression took: %3.1fs size diff %f" % (
-            time.time() - compression_timer_start, os.path.getsize(im_file) - os.path.getsize(output_file))
-    )
-
-    os.remove(im_file)
-
-    # Determine if next tape is necessary
-    print("Block position (before writing): " + str(block_position()))
-
-    # Put on tape
-    print("Write to Tape")
-    subprocess.check_call(
-        COMPRESS_WRITE_TO_TAPE_OPTS % output_file, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
-
-    os.remove(output_file)
-
-    # Determine if next tape is necessary
-    print("Block position (before writing): " + str(block_position()))
-
-    if False:
-        return archive_volume[0] + 1, archive_volume[1] + 1
-    else:
-        return archive_volume[0], archive_volume[1] + 1
-
 
 def backup(bc: BackupConfig):
+    com = setup_mq_server()
+
     with open(DATABASE_FILE, "a+") as f:
         f.write(os.linesep)
         f.write("Backup of " + VOLUME_NAME)
@@ -146,8 +203,6 @@ def backup(bc: BackupConfig):
     tar_thread = threading.Thread(target=wait_for_process_finish, args=(tar_process,))
     tar_thread.start()
 
-    com = setup_mq_server()
-
     archive_volume = (0, 0)  # (tape, volume)
     while tar_thread.is_alive():
         try:
@@ -157,6 +212,10 @@ def backup(bc: BackupConfig):
         except zmq.error.Again:
             # No msg available
             time.sleep(1)  # Save CPU as we don't have anything to do then wait
+
+    if os.path.exists(tar_output_file):
+        # backup also last output file
+        do_message(bc, None, None, tar_output_file, archive_volume)
 
     print("Tar process has ended.")
 
