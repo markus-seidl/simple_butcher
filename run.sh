@@ -2,7 +2,7 @@
 
 set -xe
 
-git pull --rebase
+#git pull --rebase
 
 source venv/bin/activate
 

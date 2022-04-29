@@ -21,8 +21,8 @@ TAR = "/usr/bin/tar"
 SEVEN_Z = "./7zz"
 MBUFFER = "/usr/bin/mbuffer"
 
-COMPRESS_SEVEN_Z_OPTS = ' a -m0=brotli -mmt=9 -p"%s" '
-COMPRESS_TAR_BACKUP_FULL_OPTS = f'cvM -L10M --new-volume-script="python archive_finalizer.py" --label="{VOLUME_NAME}" '
+COMPRESS_SEVEN_Z_OPTS = ' a -p"%s" '
+COMPRESS_TAR_BACKUP_FULL_OPTS = f'cvM -L10G --new-volume-script="python archive_finalizer.py" --label="{VOLUME_NAME}" '
 COMPRESS_WRITE_TO_TAPE_OPTS = MBUFFER + " -i %s -P 90 -l ./mbuffer.log -o " + TAPE + "  -s " + BLOCKSIZE
 
 TAPEINFO = "/usr/sbin/tapeinfo -f " + TAPE
@@ -83,6 +83,7 @@ def do_message(bc: BackupConfig, com: MyZmq, msg, tar_output_file: str, archive_
     compression_timer_start = time.time()
     output_file = TEMP_DIR + "/%09i.7zenc" % archive_volume[1]
     compression_cmd = SEVEN_Z + (COMPRESS_SEVEN_Z_OPTS % bc.password) + output_file + " " + im_file
+    # print(compression_cmd)
     compression_process = subprocess.Popen(compression_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # Fill database
@@ -119,6 +120,8 @@ def do_message(bc: BackupConfig, com: MyZmq, msg, tar_output_file: str, archive_
     subprocess.check_call(
         COMPRESS_WRITE_TO_TAPE_OPTS % output_file, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
+
+    os.remove(output_file)
 
     # Determine if next tape is necessary
     print("Block position (before writing): " + str(block_position()))
