@@ -14,8 +14,8 @@ DATABASE_FILE = "backup_db.txt"
 VOLUME_NAME = datetime.datetime.now().isoformat()
 BLOCKSIZE = "512K"
 
-OPENSSL = "/usr/bin/openssl"
-OPENSSL_OPTS = ' aes-256-cbc -iter 100000 -pass pass:"%s" -in %s -out %s '
+# CRYPT_OPTS = ' aes-256-cbc -iter 100000 -pass pass:"%s" -in %s -out %s '
+CRYPT_OPTS = ' --batch --yes --passphrase "%s" --symmetric --cipher-algo AES256 --compress-algo none -o %s %s '
 
 if sys.platform == "linux":
     TAR = "/usr/bin/tar"
@@ -23,16 +23,18 @@ if sys.platform == "linux":
     MBUFFER = "/usr/bin/mbuffer"
     TAPEINFO = "/usr/sbin/tapeinfo -f " + TAPE
     ZSTD = "/usr/bin/zstd"
+    CRYPT_CMD = "/usr/bin/gpg"
 elif sys.platform == "darwin":
     TAR = "/usr/local/bin/gtar"
     SEVEN_Z = "/usr/local/bin/7z"
     ZSTD = "/usr/local/bin/zstd"
+    CRYPT_CMD = "/usr/local/bin/gpg"
     MBUFFER = None
     TAPEINFO = None
 
 COMPRESS_SEVEN_Z_OPTS = ' a -p"%s" '
 COMPRESS_ZSTD_OPTS = ' -4 -T0 -v %s -o %s '
-COMPRESS_TAR_BACKUP_FULL_OPTS = f'cvM -L10G --new-volume-script="python archive_finalizer.py" --label="{VOLUME_NAME}" '
+COMPRESS_TAR_BACKUP_FULL_OPTS = f'cvM -L1M --new-volume-script="python archive_finalizer.py" --label="{VOLUME_NAME}" '
 COMPRESS_WRITE_TO_TAPE_OPTS = " -i %s -P 90 -l ./mbuffer.log -o " + TAPE + "  -s " + BLOCKSIZE
 
 
@@ -117,7 +119,7 @@ def do_message(bc: BackupConfig, com: MyZmq, msg, tar_output_file: str, archive_
         os.remove(output_file)
 
     # Determine if next tape is necessary
-    print("Block position (before writing): " + str(block_position()))
+    print("Block position (after writing): " + str(block_position()))
 
     if False:
         return archive_volume[0] + 1, archive_volume[1] + 1
@@ -155,7 +157,7 @@ def compress_archive(bc, im_file, archive_volume):
         im_file2 = output_file
         output_file = TEMP_DIR + "/%09i.tar.zstd.enc" % archive_volume[1]
 
-        encryption_cmd = OPENSSL + (OPENSSL_OPTS % (bc.password, im_file2, output_file))
+        encryption_cmd = CRYPT_CMD + (CRYPT_OPTS % (bc.password, output_file, im_file2))
         encryption_process = subprocess.Popen(
             encryption_cmd, shell=True, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
@@ -164,6 +166,8 @@ def compress_archive(bc, im_file, archive_volume):
         s_out, s_err = encryption_process.communicate()
         if encryption_process.returncode != 0:
             raise OSError(s_err.decode("UTF-8"))
+
+        os.remove(im_file2)
 
         return output_file
 
