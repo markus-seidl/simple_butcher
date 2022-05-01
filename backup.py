@@ -48,18 +48,18 @@ CRYPT_OPTS = ' a -mx=0 -p"%s" %s %s '
 
 
 class BackupConfig:
-    def __init__(self, password: str, src_dir: str, temp2_dir):
+    def __init__(self, password: str, src_dir: str, ramdisk_dir):
         self.password = password
         self.src_dir = src_dir
         self.compression_type = "zstd_pipe"
-        self.temp2_dir = temp2_dir
+        self.ramdisk_dir = ramdisk_dir
 
     def __repr__(self) -> str:
         return f"""
         password = {not self.password is None}
         src_dir = {self.src_dir}
         compression_type = {self.compression_type}
-        temp2_dir = {self.temp2_dir}
+        ramdisk_dir = {self.ramdisk_dir}
         """
 
 
@@ -209,7 +209,7 @@ def compress_archive(bc, im_file, archive_volume):
         return output_file
 
     elif bc.compression_type == "zstd_pipe":
-        output_file = bc.temp2_dir + "/%09i.tar.zst.7z" % archive_volume[1]
+        output_file = bc.ramdisk_dir + "/%09i.tar.zst.7z" % archive_volume[1]
 
         compression_cmd = ZSTD + (COMPRESS_ZSTD_OPTS_PIPE % im_file) + \
                           " | " + CRYPT_CMD + (CRYPT_OPTS_PIPE % (bc.password, output_file))
