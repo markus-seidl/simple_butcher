@@ -44,6 +44,7 @@ CRYPT_OPTS_PIPE = ' a -si -mx=0 -p"%s" %s '  # 7z in store only mode, use only e
 # CRYPT_OPTS = ' --batch --yes --passphrase "%s" --symmetric --cipher-algo AES256 --compress-algo none -o %s %s '
 CRYPT_OPTS = ' a -mx=0 -p"%s" %s %s '
 
+
 #  -g, --listed-incremental=FILE
 
 
@@ -53,6 +54,14 @@ class BackupConfig:
         self.src_dir = src_dir
         self.compression_type = "zstd_pipe"
         self.temp2_dir = temp2_dir
+
+    def __repr__(self) -> str:
+        return f"""
+        password = {not self.password is None}
+        src_dir = {self.src_dir}
+        compression_type = {self.compression_type}
+        temp2_dir = {self.temp2_dir}
+        """
 
 
 class MyZmq:
@@ -127,7 +136,8 @@ def do_message(bc: BackupConfig, com: MyZmq, msg, tar_output_file: str, archive_
     compression_time = time.time() - compression_timer_start
     print(
         "\tCompression took: %3.1fs %s %s/s" % (
-            compression_time, compression_info(im_file_size, output_file_size), file_size_format(output_file_size / compression_time))
+            compression_time, compression_info(im_file_size, output_file_size),
+            file_size_format(output_file_size / compression_time))
     )
 
     # Determine if next tape is necessary
@@ -239,6 +249,8 @@ def update_database(archive_volume, im_file):
 
 
 def backup(bc: BackupConfig):
+    print(bc)
+
     com = setup_mq_server()
 
     with open(DATABASE_FILE, "a+") as f:
