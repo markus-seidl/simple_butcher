@@ -7,7 +7,6 @@ import datetime
 
 import zmq
 import subprocess
-from Crypto.Cipher import AES
 
 TEMP_DIR = "./temp"
 TAPE = "/dev/nst0"
