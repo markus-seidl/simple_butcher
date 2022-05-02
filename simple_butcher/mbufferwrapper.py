@@ -36,7 +36,7 @@ class MBufferWrapper(Wrapper):
             cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1,
             universal_newlines=True
         )
-        with tqdm(total=100) as pbar:
+        with tqdm(total=100, unit="%") as pbar:
             while True:
                 with open("./mbuffer.log", "r") as f:
                     temp = f.readlines()
