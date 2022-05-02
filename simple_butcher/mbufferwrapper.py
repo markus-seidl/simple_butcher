@@ -13,7 +13,7 @@ from common import ArchiveVolumeNumber
 from database import BackupRecord
 from exe_paths import MBUFFER
 
-WRITE_TO_TAPE_OPTS = "{cmd} -i {in_file} -P 90 -l ./mbuffer.log -q -o {tape}  -s {blocksize}"
+WRITE_TO_TAPE_OPTS = "{cmd} -i {in_file} -P 90 -l {logfile} -q -o {tape}  -s {blocksize}"
 
 
 class MBufferWrapper(Wrapper):
@@ -25,11 +25,13 @@ class MBufferWrapper(Wrapper):
         if self.config.tape_dummy is not None:
             return
 
+        mbuffer_log = self.config.tempdir + "/mbuffer.log"
         cmd = WRITE_TO_TAPE_OPTS.format(
             cmd=MBUFFER,
             in_file=archive_file,
             tape=self.config.tape,
-            blocksize="512K"
+            blocksize="512K",
+            logfile=mbuffer_log
         )
 
         mbuffer_process = subprocess.Popen(
@@ -38,7 +40,7 @@ class MBufferWrapper(Wrapper):
         )
         with tqdm(total=100, unit="%") as pbar:
             while True:
-                with open("./mbuffer.log", "r") as f:
+                with open(mbuffer_log, "r") as f:
                     temp = f.readlines()
                     if len(temp) > 0:
                         last_line = temp[-1]
