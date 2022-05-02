@@ -4,7 +4,7 @@ if sys.platform == "linux":
     TAR = "/usr/bin/tar"
     SEVEN_Z = "/usr/bin/7z"
     MBUFFER = "/usr/bin/mbuffer"
-    TAPEINFO = "/usr/sbin/tapeinfo -f {tape}"
+    TAPEINFO = "/usr/sbin/tapeinfo"
     ZSTD = "/usr/bin/zstd"
     CRYPT_CMD = SEVEN_Z
     SHA256SUM = "/usr/bin/sha256sum"

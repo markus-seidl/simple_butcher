@@ -48,3 +48,21 @@ class MBufferWrapper(Wrapper):
             raise OSError(s_err)
 
         os.remove(archive_file)
+
+
+if __name__ == '__main__':
+    config = BackupConfig(
+        backup_repository=None,
+        ramdisk=None,
+        compression=None,
+        source=None,
+        password_file=None,
+        password=None,
+        tape_length=None,
+        tempdir=None,
+        tape="/dev/nst0",
+        tape_dummy=None,
+        chunk_size=None,
+        backup_name=None,
+    )
+    MBufferWrapper(config).write("/mnt/scratch/tar_output")
