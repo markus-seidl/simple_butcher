@@ -44,7 +44,7 @@ class MBufferWrapper(Wrapper):
                     break
 
         s_out, s_err = mbuffer_process.communicate()
-        if process.returncode != 0:
+        if mbuffer_process.returncode != 0:
             raise OSError(s_err)
 
         os.remove(archive_file)
