@@ -39,6 +39,16 @@ class ZstdPipe(Wrapper):
         compression_process = subprocess.Popen(
             compression_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
+
+        # while True:
+        #     realtime_output = compression_process.stderr.readline()
+        #     realtime_output = realtime_output.decode("UTF-8")
+        #     # backup_bar.set_postfix(current_file=self._cut_filename(realtime_output.strip()))
+        #     # backup_bar.update(1)
+        #
+        #     if compression_process.poll():
+        #         break
+        #
         s_out, s_err = compression_process.communicate()
 
         if compression_process.returncode != 0:

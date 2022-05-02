@@ -18,7 +18,7 @@ class Database:
     def __init__(self, database_dir, backup_repository, backup_name):
         self.database_dir = database_dir
         self.backup_repository = backup_repository
-        self.backup_name = backup_name
+        self.backup_name = str(backup_name).replace(":", "")
 
     def backup_db_dir(self) -> str:
         return self.database_dir + "/" + self.backup_repository + "/" + self.backup_name

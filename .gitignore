@@ -215,5 +215,5 @@ dest/
 temp/
 temp_src/
 backup_db.txt
-./db
+db/
 password.key

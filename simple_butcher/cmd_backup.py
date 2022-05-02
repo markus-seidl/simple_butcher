@@ -39,8 +39,6 @@ class Backup:
                 archive_volume_no = ArchiveVolumeNumber(tape_no=0, volume_no=0, block_position=0, bytes_written=0)
                 pbar = self.tqdm_create_tape_bar()
                 while tar_thread.is_alive():
-                    tar_process.stdout.readline()
-                    pbar.set_postfix(file="asd7asdfasdf/asdfasdfasd/asdfasdfasdf")
                     if self.com.wait_for_signal():
                         archive_volume_no, tape_changed = self.handle_archive(archive_volume_no)
                         if tape_changed:
