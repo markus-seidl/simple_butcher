@@ -40,15 +40,19 @@ class MBufferWrapper(Wrapper):
         )
         with tqdm(total=100, unit="%") as pbar:
             while True:
-                with open(mbuffer_log, "r") as f:
-                    temp = f.readlines()
-                    if len(temp) > 0:
-                        last_line = temp[-1]
-                        if last_line and "%" in last_line:
-                            s = re.search("(\\d+)% done", last_line, re.IGNORECASE)
-                            if s:
-                                pbar.update(int(s.group(1)) - pbar.n)
-                    time.sleep(0.1)
+                try:
+                    with open(mbuffer_log, "r") as f:
+                        temp = f.readlines()
+                        if len(temp) > 0:
+                            last_line = temp[-1]
+                            if last_line and "%" in last_line:
+                                s = re.search("(\\d+)% done", last_line, re.IGNORECASE)
+                                if s:
+                                    pbar.update(int(s.group(1)) - pbar.n)
+                except:
+                    pass
+
+                time.sleep(0.1)
 
                 if mbuffer_process.poll():
                     break
