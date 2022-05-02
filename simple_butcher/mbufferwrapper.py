@@ -11,7 +11,7 @@ from common import ArchiveVolumeNumber
 from database import BackupRecord
 from exe_paths import MBUFFER
 
-WRITE_TO_TAPE_OPTS = "{cmd} -i {in_file} -P 90 -l ./mbuffer.log -o {tape}  -s {blocksize}"
+WRITE_TO_TAPE_OPTS = "{cmd} -i {in_file} -P 90 -l ./mbuffer.log -q -o {tape}  -s {blocksize}"
 
 
 class MBufferWrapper(Wrapper):
@@ -33,12 +33,14 @@ class MBufferWrapper(Wrapper):
         mbuffer_process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, universal_newlines=True)
         with tqdm(total=100) as pbar:
             while True:
-                realtime_output = mbuffer_process.stdout.readline()
-                realtime_output = realtime_output.decode("UTF-8")
-                if "%" in realtime_output:
-                    s = re.search("(\\d+)% done", realtime_output, re.IGNORECASE)
-                    if s:
-                        pbar.n = int(s.group(1))
+                with open("./mbuffer.log", "r") as f:
+                    temp = f.readlines()
+                    if len(temp) > 0:
+                        last_line = temp[-1]
+                        if "%" in last_line:
+                            s = re.search("(\\d+)% done", last_line, re.IGNORECASE)
+                            if s:
+                                pbar.n = int(s.group(1))
 
                 if mbuffer_process.poll():
                     break
