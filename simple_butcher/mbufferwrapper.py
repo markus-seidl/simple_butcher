@@ -46,7 +46,7 @@ class MBufferWrapper(Wrapper):
                             s = re.search("(\\d+)% done", last_line, re.IGNORECASE)
                             if s:
                                 pbar.update(int(s.group(1)) - pbar.n)
-                            time.sleep(0.1)
+                    time.sleep(0.1)
 
                 if mbuffer_process.poll():
                     break
