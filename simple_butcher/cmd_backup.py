@@ -77,7 +77,7 @@ class Backup:
                 unit="steps",
                 desc="Handling archive",
                 dynamic_ncols=True,
-                position=1,
+                position=2,
                 ascii=True,
                 leave=False
         ) as handle_bar:
