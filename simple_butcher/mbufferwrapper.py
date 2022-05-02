@@ -2,6 +2,8 @@ import subprocess
 import logging
 import threading
 import os
+import time
+
 from tqdm import tqdm
 import re
 
@@ -30,17 +32,22 @@ class MBufferWrapper(Wrapper):
             blocksize="512K"
         )
 
-        mbuffer_process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, universal_newlines=True)
+        mbuffer_process = subprocess.Popen(
+            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1,
+            universal_newlines=True
+        )
         with tqdm(total=100) as pbar:
             while True:
                 with open("./mbuffer.log", "r") as f:
                     temp = f.readlines()
                     if len(temp) > 0:
                         last_line = temp[-1]
-                        if "%" in last_line:
-                            s = re.search("(\\d+)% done", last_line, re.IGNORECASE)
-                            if s:
-                                pbar.n = int(s.group(1))
+
+                if last_line and "%" in last_line:
+                    s = re.search("(\\d+)% done", last_line, re.IGNORECASE)
+                    if s:
+                        pbar.update(int(s.group(1)) - pbar.n)
+                    time.sleep(0.1)
 
                 if mbuffer_process.poll():
                     break
