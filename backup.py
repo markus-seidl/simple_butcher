@@ -282,11 +282,6 @@ def backup(bc: BackupConfig):
     print("Tar process has ended.")
 
 
-def encrypt_file(key, file_name, output_file):
-    key = b"asdfasdf"
-    cipher = AES.new(key, AES.MODE_GCM)
-
-
 if __name__ == '__main__':
     cmd = sys.argv[1]
 
