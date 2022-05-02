@@ -3,7 +3,7 @@ import logging
 import argparse
 import datetime
 
-from simple_butcher.config import BackupConfig
+from config import BackupConfig
 from cmd_backup import Backup
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
