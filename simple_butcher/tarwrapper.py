@@ -47,7 +47,8 @@ class TarWrapper(Wrapper):
     def _wait_for_process_finish_full_backup(self, process: subprocess.Popen, backup_bar: tqdm):
         while True:
             realtime_output = process.stdout.readline()
-            backup_bar.set_postfix(current_file=realtime_output)
+            realtime_output = realtime_output.decode("UTF-8")
+            backup_bar.set_postfix(current_file=self._cut_filename(realtime_output.strip()))
 
             if process.poll():
                 break
@@ -55,6 +56,16 @@ class TarWrapper(Wrapper):
         s_out, s_err = process.communicate()
         if process.returncode != 0:
             raise OSError(s_err)
+
+    def _cut_filename(self, file_name: str, prefix_length: int = 30, postfix_length: int = 10) -> str:
+        """
+        Reduces the length of the filename to the specified size
+        :param file_name:
+        :return:
+        """
+
+        if len(file_name) > prefix_length + postfix_length:
+            return file_name[0:prefix_length] + "..." + file_name[prefix_length + 1: prefix_length + postfix_length + 1]
 
     def get_contents(self, archive_volume_no: ArchiveVolumeNumber, tar_file: str) -> [BackupRecord]:
         """
