@@ -36,7 +36,7 @@ class MBufferWrapper(Wrapper):
                 realtime_output = mbuffer_process.stdout.readline()
                 realtime_output = realtime_output.decode("UTF-8")
                 if "%" in realtime_output:
-                    s = re.search("(\d+)% done", realtime_output, re.IGNORECASE)
+                    s = re.search("(\\d+)% done", realtime_output, re.IGNORECASE)
                     if s:
                         pbar.n = int(s.group(1))
 
