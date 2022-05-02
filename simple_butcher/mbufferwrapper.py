@@ -2,6 +2,8 @@ import subprocess
 import logging
 import threading
 import os
+from tqdm import tqdm
+import re
 
 from base_wrapper import Wrapper
 from config import BackupConfig
@@ -28,5 +30,21 @@ class MBufferWrapper(Wrapper):
             blocksize="512K"
         )
 
-        subprocess.check_call(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        mbuffer_process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        with tqdm(total=100) as pbar:
+            while True:
+                realtime_output = mbuffer_process.stdout.readline()
+                realtime_output = realtime_output.decode("UTF-8")
+                if "%" in realtime_output:
+                    s = re.search("(\d+)% done", realtime_output, re.IGNORECASE)
+                    if s:
+                        pbar.n = int(s.group(1))
+
+                if mbuffer_process.poll():
+                    break
+
+        s_out, s_err = mbuffer_process.communicate()
+        if process.returncode != 0:
+            raise OSError(s_err)
+
         os.remove(archive_file)
