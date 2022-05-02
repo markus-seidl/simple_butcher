@@ -2,6 +2,7 @@ import logging
 
 import argparse
 import datetime
+import os
 
 from config import BackupConfig
 from cmd_backup import Backup
@@ -52,7 +53,7 @@ def do_backup(args):
     )
 
     with open(config.password_file, 'r') as f:
-        config.password = f.readline()
+        config.password = f.readline().strip().strip(os.linesep)
 
     print(config.__repr__().replace(config.password, "<password>"))
     Backup(config).do()

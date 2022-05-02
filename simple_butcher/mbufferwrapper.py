@@ -18,10 +18,9 @@ class MBufferWrapper(Wrapper):
         self.config = config
 
     def write(self, archive_file):
-        if self.config.tape_dummy:
+        if self.config.tape_dummy is not None:
             return
 
-        logging.info("Write to Tape...")
         cmd = WRITE_TO_TAPE_OPTS.format(
             cmd=MBUFFER,
             in_file=archive_file,

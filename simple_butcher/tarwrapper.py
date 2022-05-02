@@ -2,6 +2,7 @@ import subprocess
 import logging
 import threading
 import os
+from tqdm import tqdm
 
 from base_wrapper import Wrapper
 from config import BackupConfig
@@ -24,7 +25,7 @@ class TarWrapper(Wrapper):
     def __init__(self):
         super().__init__()
 
-    def main_backup_full(self, config: BackupConfig) -> (str, subprocess.Popen, threading.Thread):
+    def main_backup_full(self, config: BackupConfig, backup_bar: tqdm) -> (str, subprocess.Popen, threading.Thread):
         tar_output_file = config.tempdir + "/tar_output"
 
         tar_cmd = COMPRESS_TAR_BACKUP_FULL_CMD.format(
@@ -38,10 +39,22 @@ class TarWrapper(Wrapper):
 
         tar_process = subprocess.Popen(tar_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-        tar_thread = threading.Thread(target=self.wait_for_process_finish, args=(tar_process,))
+        tar_thread = threading.Thread(target=self._wait_for_process_finish_full_backup, args=(tar_process, backup_bar,))
         tar_thread.start()
 
         return tar_output_file, tar_process, tar_thread
+
+    def _wait_for_process_finish_full_backup(self, process: subprocess.Popen, backup_bar: tqdm):
+        while True:
+            realtime_output = process.stdout.readline()
+            backup_bar.set_postfix(current_file=realtime_output)
+
+            if process.poll():
+                break
+
+        s_out, s_err = process.communicate()
+        if process.returncode != 0:
+            raise OSError(s_err)
 
     def get_contents(self, archive_volume_no: ArchiveVolumeNumber, tar_file: str) -> [BackupRecord]:
         """

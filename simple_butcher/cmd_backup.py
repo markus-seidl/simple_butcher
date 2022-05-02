@@ -33,49 +33,57 @@ class Backup:
             self.database = Database("./db", self.config.backup_repository, self.config.backup_name)
             self.database.start_backup()
 
-            self.tar_output_file, tar_process, tar_thread = self.tar.main_backup_full(self.config)
+            with tqdm(unit="files", total=4) as backup_bar:
+                self.tar_output_file, tar_process, tar_thread = self.tar.main_backup_full(self.config, backup_bar)
 
-            archive_volume_no = ArchiveVolumeNumber(tape_no=0, volume_no=0, block_position=0, bytes_written=0)
-            pbar = self.tqdm_create_main_bar()
-            while tar_thread.is_alive():
-                if self.com.wait_for_signal():
-                    archive_volume_no, tape_changed = self.handle_archive(archive_volume_no)
-                    if tape_changed:
-                        pbar.close()
-                        pbar = self.tqdm_create_main_bar()
+                archive_volume_no = ArchiveVolumeNumber(tape_no=0, volume_no=0, block_position=0, bytes_written=0)
+                pbar = self.tqdm_create_tape_bar()
+                while tar_thread.is_alive():
+                    tar_process.stdout.readline()
+                    pbar.set_postfix(file="asd7asdfasdf/asdfasdfasd/asdfasdfasdf")
+                    if self.com.wait_for_signal():
+                        archive_volume_no, tape_changed = self.handle_archive(archive_volume_no)
+                        if tape_changed:
+                            pbar.close()
+                            pbar = self.tqdm_create_tape_bar()
 
-                    pbar.n = archive_volume_no.block_position
+                        pbar.n = archive_volume_no.block_position
 
-            if os.path.exists(self.tar_output_file):
-                # backup also last output file
-                archive_volume_no = self.handle_archive(archive_volume_no)
+                if os.path.exists(self.tar_output_file):
+                    # backup also last output file
+                    archive_volume_no = self.handle_archive(archive_volume_no, last_archive=True)
 
-            logging.info("Backup process has finished.")
+                pbar.close()
+                logging.info("Backup process has finished.")
 
-    def tqdm_create_main_bar(self):
+    def tqdm_create_tape_bar(self):
         return tqdm(
             total=self.config.tape_length,
             unit="blocks",
             desc="Current tape",
-            dynamic_ncols=True
+            dynamic_ncols=True,
+            ascii=True
         )
 
-    def handle_archive(self, archive_volume_no: ArchiveVolumeNumber) -> (ArchiveVolumeNumber, bool):
+    def handle_archive(
+            self, archive_volume_no: ArchiveVolumeNumber, last_archive: bool = False
+    ) -> (ArchiveVolumeNumber, bool):
         """
         :param archive_volume_no:
         :return: (ArchiveVolumeNumber, Tape position / backuped size)
         """
         logging.debug("Chunk is ready...")
-        handle_bar = tqdm(
-            total=4,
-            unit="steps",
-            desc="Handling archive",
-            dynamic_ncols=True,
-            position=1
-        )
 
-        with handle_bar:
-            self.update_tqdm(handle_bar, 1, "List contents")
+        with tqdm(
+                total=4,
+                unit="steps",
+                desc="Handling archive",
+                dynamic_ncols=True,
+                position=1,
+                ascii=True,
+                leave=False
+        ) as handle_bar:
+            update_tqdm_n_desc(handle_bar, 1, "List contents")
 
             # Move output to new file so the tar process can be executed while compression/enc/tape writing is done
             tar_archive_file = self.config.tempdir + "/files.tar.%09i" % archive_volume_no.volume_no
@@ -83,7 +91,7 @@ class Backup:
             tar_archive_file_size = os.path.getsize(tar_archive_file)
 
             # Unleash the TAR process to prepare the next file
-            if self.com:
+            if self.com and not last_archive:  # can't signal on last archive, as there is no one listening
                 self.com.socket.send(b"CONTINUE")
 
             tar_contents = self.tar.get_contents(archive_volume_no, tar_archive_file)
@@ -91,14 +99,14 @@ class Backup:
             # Compression / Encryption
             compression_timer_start = time.time()
 
-            self.update_tqdm(handle_bar, 1, "Compress")
+            update_tqdm_n_desc(handle_bar, 1, "Compress")
             final_archive = self.compression.do(
                 config=self.config,
                 archive_volume_no=archive_volume_no,
                 input_file=tar_archive_file
             )
 
-            self.update_tqdm(handle_bar, 1, "SHA256")
+            update_tqdm_n_desc(handle_bar, 1, "SHA256")
             final_archive_size = os.path.getsize(final_archive)
             final_archive_sha = self.sha256.calc_sum(final_archive)
             tar_contents = self.update_backup_records(tar_contents, final_archive_sha)
@@ -126,7 +134,7 @@ class Backup:
                 input("Press any key")
                 tape_change = True
 
-            self.update_tqdm(handle_bar, 1, "Write to tape")
+            update_tqdm_n_desc(handle_bar, 1, "Write to tape")
             self.mbuffer.write(final_archive)
             archive_volume_no.incr_volume_no()
 
@@ -146,6 +154,7 @@ class Backup:
         position = self.tapeinfo.blockposition()
         return position + self.estimate_block_length(file_size) + 10 < self.config.tape_length
 
-    def update_tqdm(self, bar, n, desc):
-        bar.set_description(desc)
-        bar.update(n)
+
+def update_tqdm_n_desc(bar, n, desc):
+    bar.set_description(desc)
+    bar.update(n)
