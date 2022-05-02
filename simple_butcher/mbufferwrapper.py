@@ -30,7 +30,7 @@ class MBufferWrapper(Wrapper):
             blocksize="512K"
         )
 
-        mbuffer_process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        mbuffer_process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, universal_newlines=True)
         with tqdm(total=100) as pbar:
             while True:
                 realtime_output = mbuffer_process.stdout.readline()
