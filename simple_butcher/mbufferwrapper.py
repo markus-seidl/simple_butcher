@@ -54,7 +54,7 @@ class MBufferWrapper(Wrapper):
 
                 time.sleep(0.1)
 
-                if mbuffer_process.poll():
+                if mbuffer_process.poll() is not None:
                     break
 
         s_out, s_err = mbuffer_process.communicate()
