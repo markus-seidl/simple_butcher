@@ -19,6 +19,11 @@ class SizeInfo:
         self.written_bytes = written_bytes
         self.maximum_bytes = maximum_bytes
 
+    def __repr__(self):
+        return f"remaining_bytes: {self.remaining_bytes}, " \
+               f"written_bytes: {self.written_bytes}, " \
+               f"maximum_bytes: {self.maximum_bytes}"
+
 
 class TapeinfoWrapper(Wrapper):
     def __init__(self, config: BackupConfig):
@@ -81,4 +86,4 @@ if __name__ == '__main__':
         chunk_size=None,
         backup_name=None,
     )
-    print(TapeinfoWrapper(config).blockposition())
+    print(TapeinfoWrapper(config).size_statistics())
