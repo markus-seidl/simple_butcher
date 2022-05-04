@@ -48,7 +48,7 @@ class Backup:
                             pbar.close()
                             pbar = self.tqdm_create_tape_bar()
 
-                        pbar.n = archive_volume_no.block_position
+                        pbar.update(archive_volume_no.block_position - pbar.n)
 
                 if os.path.exists(self.tar_output_file):
                     # backup also last output file
@@ -109,10 +109,7 @@ class Backup:
 
             update_tqdm_n_desc(handle_bar, 1, "SHA256")
             final_archive_size = os.path.getsize(final_archive)
-            final_archive_sha = self.sha256.calc_sum(final_archive)
-            tar_contents = self.update_backup_records(tar_contents, final_archive_sha)
-            self.database.store(tar_contents)
-
+            self.sha256.start_calc_sum(final_archive)
             compression_time = time.time() - compression_timer_start
             logging.debug(
                 "Compression took: %3.1fs %s %s/s" % (
@@ -133,11 +130,17 @@ class Backup:
             if not self.fit_on_tape(final_archive_size):
                 logging.warning("Next archive will not fit on tape, please change it and press any key...")
                 input("Press any key")
+
+                archive_volume_no.incr_tape_no()
                 tape_change = True
 
             update_tqdm_n_desc(handle_bar, 1, "Write to tape")
             self.mbuffer.write(final_archive)
             archive_volume_no.incr_volume_no()
+
+            final_archive_sha = self.sha256.wait_for_sha_sum()
+            tar_contents = self.update_backup_records(tar_contents, final_archive_sha)
+            self.database.store(tar_contents)
 
             return archive_volume_no, tape_change
 
