@@ -7,7 +7,7 @@ from base_wrapper import Wrapper
 from config import BackupConfig
 from common import ArchiveVolumeNumber
 from database import BackupRecord
-from exe_paths import TAPEINFO
+from exe_paths import SG_LOGS
 
 TAPE_CMD = '{cmd} -f {tape}'
 LOG_CMD = '{cmd} -a {tape}'
@@ -55,6 +55,10 @@ class TapeinfoWrapper(Wrapper):
         remaining_capa_line = "Main partition remaining capacity (in MiB): "
         maximum_size_line = "Main partition maximum capacity (in MiB): "
 
+        cmd = TAPE_CMD.format(
+            cmd=SG_LOGS,
+            tape=self.config.tape
+        )
         log_process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         s_out, s_err = log_process.communicate()
 
