@@ -28,6 +28,10 @@ class ZstdPipe(Wrapper):
     def do(self, config: BackupConfig, archive_volume_no: ArchiveVolumeNumber, input_file: str):
         output_file = config.ramdisk + "/%09i.tar.zst.7z" % archive_volume_no.volume_no
 
+        if os.path.exists(output_file):
+            # 7z will add to the output file if it already exists, make sure that isn't the case
+            os.remove(output_file)
+
         compression_cmd = COMPRESSION_PIPE_CMD.format(
             zstd=ZSTD,
             seven_z=SEVEN_Z,

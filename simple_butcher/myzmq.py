@@ -1,3 +1,4 @@
+import os
 import time
 
 import zmq
@@ -25,3 +26,22 @@ class MyZmq:
     def __del__(self):
         self.socket.close()
         self.context.term()
+
+
+class SimpleMq:
+    def __init__(self, communication_file: str):
+        self.communication_file = communication_file
+
+    def cleanup(self):
+        if os.path.exists(self.communication_file):
+            os.remove(self.communication_file)
+
+    def wait_for_signal(self) -> bool:
+        if os.path.exists(self.communication_file):
+            return True
+
+        time.sleep(0.1)
+        return False
+
+    def signal_tar_to_continue(self):
+        os.remove(self.communication_file)

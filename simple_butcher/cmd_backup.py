@@ -5,7 +5,7 @@ import time
 
 from config import BackupConfig
 from common import ArchiveVolumeNumber, compression_info, file_size_format
-from myzmq import MyZmq
+from myzmq import SimpleMq
 from tarwrapper import TarWrapper
 from sha256wrapper import Sha256Wrapper
 from compression import ZstdPipe
@@ -19,7 +19,8 @@ from tqdm.contrib.logging import logging_redirect_tqdm
 class Backup:
     def __init__(self, config: BackupConfig):
         self.config = config
-        self.com = MyZmq()
+        self.com = SimpleMq(config.tempdir + "/tar_archive_done")
+        self.com.cleanup()
         self.tar_output_file = None
         self.tar = TarWrapper()
         self.sha256 = Sha256Wrapper()
@@ -34,7 +35,9 @@ class Backup:
             self.database.start_backup()
 
             with tqdm(unit="files", total=4) as backup_bar:
-                self.tar_output_file, tar_process, tar_thread = self.tar.main_backup_full(self.config, backup_bar)
+                self.tar_output_file, tar_process, tar_thread = self.tar.main_backup_full(
+                    self.config, backup_bar, self.com.communication_file
+                )
 
                 archive_volume_no = ArchiveVolumeNumber(tape_no=0, volume_no=0, block_position=0, bytes_written=0)
                 pbar = self.tqdm_create_tape_bar()
@@ -90,7 +93,7 @@ class Backup:
 
             # Unleash the TAR process to prepare the next file
             if self.com and not last_archive:  # can't signal on last archive, as there is no one listening
-                self.com.socket.send(b"CONTINUE")
+                self.com.signal_tar_to_continue()
 
             tar_contents = self.tar.get_contents(archive_volume_no, tar_archive_file)
 
