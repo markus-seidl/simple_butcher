@@ -39,16 +39,17 @@ class Backup:
                     self.config, backup_bar, self.com.communication_file
                 )
 
+                initial_tape_size = self.tapeinfo.size_statistics()
+
                 archive_volume_no = ArchiveVolumeNumber(tape_no=0, volume_no=0, block_position=0, bytes_written=0)
-                pbar = self.tqdm_create_tape_bar()
+                pbar = self.tqdm_create_tape_bar(initial_tape_size.remaining_bytes)
                 while tar_thread.is_alive():
                     if self.com.wait_for_signal():
                         archive_volume_no, tape_changed = self.handle_archive(archive_volume_no)
                         if tape_changed:
-                            pbar.close()
-                            pbar = self.tqdm_create_tape_bar()
+                            pbar.update(-pbar.n)
 
-                        pbar.update(archive_volume_no.block_position - pbar.n)
+                        pbar.update(archive_volume_no.bytes_written - pbar.n)
 
                 if os.path.exists(self.tar_output_file):
                     # backup also last output file
@@ -57,10 +58,12 @@ class Backup:
                 pbar.close()
                 logging.info("Backup process has finished.")
 
-    def tqdm_create_tape_bar(self):
+    def tqdm_create_tape_bar(self, tape_length):
         return tqdm(
-            total=self.config.tape_length,
-            unit="blocks",
+            total=tape_length,
+            unit="byte",
+            unit_scale=True,
+            unit_divisor=1024,
             desc="Current tape",
             dynamic_ncols=True,
             ascii=True
@@ -120,11 +123,12 @@ class Backup:
 
             # Determine if next tape is necessary
             if self.config.tape_dummy:
-                archive_volume_no.block_position = int(self.estimate_block_length(final_archive_size))
+                # fake for no-tape
+                archive_volume_no.bytes_written += int(final_archive_size)
             else:
-                archive_volume_no.block_position += self.tapeinfo.blockposition()  # fake for debugging
-            archive_volume_no.bytes_written += final_archive_size
-            logging.debug("Block position (before writing): " + str(archive_volume_no.block_position))
+                archive_volume_no.bytes_written = self.tapeinfo.size_statistics().written_bytes
+
+            logging.debug("Written to tape (before writing): " + str(archive_volume_no.bytes_written))
 
             tape_change = False
             if not self.fit_on_tape(final_archive_size):
@@ -154,9 +158,11 @@ class Backup:
         block_size_bytes = 524272  # rough estimate
         return file_size / block_size_bytes
 
-    def fit_on_tape(self, file_size):
-        position = self.tapeinfo.blockposition()
-        return position + self.estimate_block_length(file_size) + 10 < self.config.tape_length
+    def fit_on_tape(self, file_size_bytes):
+        written_bytes = self.tapeinfo.size_statistics().written_bytes
+        remaining_bytes = self.tapeinfo.size_statistics().remaining_bytes
+
+        return file_size_bytes + 1 * 1000 * 1000 < remaining_bytes
 
 
 def update_tqdm_n_desc(bar, n, desc):
