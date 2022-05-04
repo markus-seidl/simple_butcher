@@ -55,7 +55,7 @@ class TapeinfoWrapper(Wrapper):
         remaining_capa_line = "Main partition remaining capacity (in MiB): "
         maximum_size_line = "Main partition maximum capacity (in MiB): "
 
-        cmd = TAPE_CMD.format(
+        cmd = LOG_CMD.format(
             cmd=SG_LOGS,
             tape=self.config.tape
         )
