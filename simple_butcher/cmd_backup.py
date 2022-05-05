@@ -162,7 +162,8 @@ class Backup:
         written_bytes = self.tapeinfo.size_statistics().written_bytes
         remaining_bytes = self.tapeinfo.size_statistics().remaining_bytes
 
-        return file_size_bytes + 1 * 1000 * 1000 < remaining_bytes
+        buffer_bytes = 150 * 1000 * 1000 * 1000  # on my LTO-6 tapes I can only write until 115GB are remaining
+        return file_size_bytes + buffer_bytes < remaining_bytes
 
 
 def update_tqdm_n_desc(bar, n, desc):
