@@ -73,6 +73,10 @@ class ZstdPipe(Wrapper):
 
         logging.info(f"Compressing + Encrypting done for {report_performance(start_time, output_file)}")
 
+        output_size = os.path.getsize(output_file)
+        compression_ratio_str = f"%.2f" % (output_size / original_size * 100)
+        logging.info(f"Compression ratio: {compression_ratio_str}%")
+
         os.remove(input_file)
 
         return output_file
