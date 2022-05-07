@@ -13,7 +13,7 @@ Path(communication_file).touch(exist_ok=False)
 while os.path.exists(communication_file):
     time.sleep(0.5)
 
-print(f"Communication gone, continue...")
+print(f"Communication file gone, continuing...")
 
 if False:
     import zmq

@@ -10,6 +10,7 @@ if sys.platform == "linux":
     SHA256SUM = "/usr/bin/sha256sum"
     SG_LOGS = "/usr/bin/sg_logs"
     FIND = "/usr/bin/find"
+    MT_ST = "/usr/bin/mt-st"
 elif sys.platform == "darwin":
     TAR = "/usr/local/bin/gtar"
     SEVEN_Z = "/usr/local/bin/7z"
@@ -20,3 +21,4 @@ elif sys.platform == "darwin":
     SG_LOGS = None
     SHA256SUM = "/usr/local/bin/sha256sum"
     FIND = "/usr/local/bin/gfind"
+    MT_ST = None

@@ -39,6 +39,7 @@ class MBufferWrapper(Wrapper):
             universal_newlines=True
         )
 
+        logging.info(f"Start writing file {archive_file} to tape {self.config.tape}")
         start_time = time.time()
         # with create_tqdm(total=100, unit="%", leave=False) as pbar:
         last_percentage = -1
