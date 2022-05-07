@@ -9,10 +9,13 @@ class BackupConfig:
     source: str
     password_file: str
     password: str
-    tape_length: int
+    tape_buffer: int
     tempdir: str
     tape: str
     tape_dummy: str
     chunk_size: int  # GB
     backup_name: str
+    base_of_backup: int
+    incremental_time: int
+
 

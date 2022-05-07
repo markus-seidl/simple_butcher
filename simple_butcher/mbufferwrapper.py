@@ -9,7 +9,7 @@ import re
 
 from base_wrapper import Wrapper
 from config import BackupConfig
-from common import ArchiveVolumeNumber
+from common import ArchiveVolumeNumber, report_performance
 from database import BackupRecord
 from exe_paths import MBUFFER
 
@@ -38,24 +38,33 @@ class MBufferWrapper(Wrapper):
             cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1,
             universal_newlines=True
         )
-        with tqdm(total=100, unit="%", leave=False) as pbar:
-            while True:
-                try:
-                    with open(mbuffer_log, "r") as f:
-                        temp = f.readlines()
-                        if len(temp) > 0:
-                            last_line = temp[-1]
-                            if last_line and "%" in last_line:
-                                s = re.search("(\\d+)% done", last_line, re.IGNORECASE)
-                                if s:
-                                    pbar.update(int(s.group(1)) - pbar.n)
-                except:
-                    pass
 
-                time.sleep(0.1)
+        start_time = time.time()
+        # with create_tqdm(total=100, unit="%", leave=False) as pbar:
+        last_percentage = -1
+        while True:
+            try:
+                with open(mbuffer_log, "r") as f:
+                    temp = f.readlines()
+                    if len(temp) > 0:
+                        last_line = temp[-1]
+                        if last_line and "%" in last_line:
+                            s = re.search("(\\d+)% done", last_line, re.IGNORECASE)
+                            if s:
+                                cur_percentage = int(s.group(1))
+                                if last_percentage != cur_percentage:
+                                    logging.info(f"Writing to tape... {cur_percentage}%")
+                                    last_percentage = cur_percentage
+                                # pbar.update(int(s.group(1)) - pbar.n)
+            except:
+                pass
 
-                if mbuffer_process.poll() is not None:
-                    break
+            time.sleep(2)
+
+            if mbuffer_process.poll() is not None:
+                break
+
+        logging.info(f"Finished writing to tape for {report_performance(start_time, archive_file)}")
 
         s_out, s_err = mbuffer_process.communicate()
         if mbuffer_process.returncode != 0:
