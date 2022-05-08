@@ -14,6 +14,8 @@ Additionally no "custom code" is used, `simple_butcher` only orchestrates other 
 * zstd
   * Used for fast and good compression 
 * mbfuffer
+* age
+  * https://github.com/FiloSottile/age
 * sha256sum
 
 # FAQ

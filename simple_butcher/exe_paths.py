@@ -11,6 +11,8 @@ if sys.platform == "linux":
     SG_LOGS = "/usr/bin/sg_logs"
     FIND = "/usr/bin/find"
     MT_ST = "/usr/bin/mt-st"
+    AGE = "/usr/bin/age"
+    TEE = "/usr/bin/tee"
 elif sys.platform == "darwin":
     TAR = "/usr/local/bin/gtar"
     SEVEN_Z = "/usr/local/bin/7z"
@@ -22,3 +24,5 @@ elif sys.platform == "darwin":
     SHA256SUM = "/usr/local/bin/sha256sum"
     FIND = "/usr/local/bin/gfind"
     MT_ST = None
+    AGE = "/usr/local/bin/age"
+    TEE = "/usr/bin/tee"

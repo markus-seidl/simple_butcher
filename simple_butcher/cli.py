@@ -19,7 +19,7 @@ def do():
     backup = subparsers.add_parser("backup")
     backup.add_argument("--backup-repository", help="Name of the backup repository", default="default")
     backup.add_argument("--ramdisk", help="Ramdisk for caching parts, should fit a single part")
-    backup.add_argument("--compression", help="only zstd_pipe is supported", default="zstd_pipe")
+    backup.add_argument("--compression", help="only zstd_pipe is supported", default="zstd_pipe_v2")
     backup.add_argument("--source", help="Source directory", required=True)
     backup.add_argument("--password-file", help="Password in plain text as file", default="./password.key")
     backup.add_argument("--tape-buffer", help="GBs left before changing to the next tape", default=10, type=int)
