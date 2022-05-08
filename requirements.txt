@@ -1,2 +1,5 @@
 pyzmq>=22.3
 pycryptodome>=3.14
+tqdm>=4.64
+# alive-progress>=2.4.1
+rich>=12.3.0
