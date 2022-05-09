@@ -32,7 +32,7 @@ class MTSTWrapper(Wrapper):
         for line in output_lines:
             # File number=1, block number=0, partition=0
             s = re.search(
-                "File number=(\\d+), block number=(\\d+), partition=(\\d+)", last_line, re.IGNORECASE
+                "File number=(\\d+), block number=(\\d+), partition=(\\d+)", line, re.IGNORECASE
             )
             if s:
                 return int(s.group(1)), int(s.group(2)), int(s.group(3))
