@@ -17,6 +17,8 @@ Additionally no "custom code" is used, `simple_butcher` only orchestrates other 
 * age
   * https://github.com/FiloSottile/age
 * sha256sum
+* md5sum
+  * A lot faster than sha256
 
 # FAQ
 

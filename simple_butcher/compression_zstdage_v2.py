@@ -14,18 +14,24 @@ from database import BackupRecord
 from exe_paths import ZSTD, AGE, TEE, MBUFFER, SHA256SUM
 from compression import Compression
 
-PIPE_CMD_TAPE = '{zstd_exe} -3 -T0 {in_file} --stdout | ' \
-                '{age_exe} -e -i {age_key} | ' \
-                '{tee_exe} ' \
-                ' >( {mbuffer_exe} -P 90 -l {mbuffer_logfile} -q -o {tape} -s {tape_blocksize} )' \
-                ' >( {sha_exe} -b > {shasum_output} ) ' \
-                ' > /dev/null '
+# PIPE_CMD_TAPE = '{zstd_exe} -3 -T0 {in_file} --stdout | ' \
+#                 '{age_exe} -e -i {age_key} | ' \
+#                 '{tee_exe} ' \
+#                 ' >( {mbuffer_exe} -P 90 -l {mbuffer_logfile} -q -o {tape} -s {tape_blocksize} )' \
+#                 ' >( {sha_exe} -b > {hash_output} ) ' \
+#                 ' > /dev/null '
 
-PIPE_CMD_DUMMY = '{zstd_exe} -3 -T0 {in_file} --stdout | ' \
-                 '{age_exe} -e -i {age_key} | ' \
-                 '{tee_exe} ' \
-                 ' >( {sha_exe} -b > {shasum_output} ) ' \
-                 ' > {output_file} '
+# PIPE_CMD_DUMMY = '{zstd_exe} -3 -T0 {in_file} --stdout | ' \
+#                  '{age_exe} -e -i {age_key} | ' \
+#                  '{tee_exe} ' \
+#                  ' >( {sha_exe} -b > {hash_output} ) ' \
+#                  ' > {output_file} '
+
+# zstd -3 -T0 "$1" --stdout | age -e -i "$2" | tee  >( md5sum -b > "$3" ) > "$4"
+PIPE_CMD_DUMMY = './simple_butcher/zstdage_v2_dummy_helper.sh "{in_file}" "{age_key}" "{hash_output}" "{output_file}"'
+
+# zstd -4 -T0 "$1" --stdout | age -e -i "$2" | tee >( mbuffer -P 90 -l "$3" -q -o "$4" -m 5G -s "512k" ) >( md5sum -b > "$5" ) > /dev/null
+PIPE_CMD_TAPE = './simple_butcher/zstdage_v2_tape_helper.sh "{in_file}" "{age_key}" "{mbuffer_logfile}" "{tape}" "{hash_output}"'
 
 
 class ZstdAgeV2(Compression):
@@ -39,8 +45,8 @@ class ZstdAgeV2(Compression):
         self.all_bytes_read = 0
         self.all_bytes_written = 0
 
-    def do(self, config: BackupConfig, archive_volume_no: ArchiveVolumeNumber, input_file: str) -> str:
-        output_file = config.ramdisk + "/%09i.tar.zst.7z" % archive_volume_no.volume_no
+    def do(self, config: BackupConfig, archive_volume_no: ArchiveVolumeNumber, input_file: str) -> (str, str):
+        output_file = config.ramdisk + "/%09i.tar.zst.age" % archive_volume_no.volume_no
 
         original_size = os.path.getsize(input_file)
         self.all_bytes_read += original_size
@@ -52,20 +58,21 @@ class ZstdAgeV2(Compression):
         if config.tape_dummy is not None:
             all_cmd = PIPE_CMD_DUMMY
 
+        # Has problems with pipes...
         mbuffer_log = config.tempdir + "/mbuffer.log"
-        shasum_output = config.tempdir + "/shasum.log"
+        hash_output = config.tempdir + "/hash.log"
         all_cmd = all_cmd.format(
-            zstd_exe=ZSTD,
+            # zstd_exe=ZSTD,
+            # age_exe=AGE,
+            # tee_exe=TEE,
+            # mbuffer_exe=MBUFFER,
+            # sha_exe=SHA256SUM,
+            # blocksize="512K",
             in_file=input_file,
-            age_exe=AGE,
             age_key=config.password_file,
-            tee_exe=TEE,
-            mbuffer_exe=MBUFFER,
             mbuffer_logfile=mbuffer_log,
             tape=config.tape,
-            blocksize="512K",
-            sha_exe=SHA256SUM,
-            shasum_output=shasum_output,
+            hash_output=hash_output,
             output_file=output_file
         )
 
@@ -98,8 +105,10 @@ class ZstdAgeV2(Compression):
             elapsed_time_str = "%.0f" % elapsed_time
             total_bytes_written = self.parse_mbuffer_summary_log(mbuffer_log)
             self.all_bytes_written += total_bytes_written
-            logging.info(f"C/E/SHA done for {file_size_format(total_bytes_written)} in {elapsed_time_str} "
-                         f" with {file_size_format(total_bytes_written / elapsed_time)}/s")
+            logging.info(
+                f"C/E/SHA done for {file_size_format(total_bytes_written)} in {elapsed_time_str} "
+                f" with {file_size_format(total_bytes_written / elapsed_time)}/s"
+            )
 
             compression_ratio_str = f"%.2f" % (total_bytes_written / original_size * 100)
             logging.info(f"Compression ratio: {compression_ratio_str}%")
@@ -114,9 +123,9 @@ class ZstdAgeV2(Compression):
 
         os.remove(input_file)
 
-        with open(shasum_output, "r") as f:
-            shasum = f.readlines()[0]
-            return shasum.split(" ")[0]
+        with open(hash_output, "r") as f:
+            backup_hash = f.readlines()[0]
+            return "md5sum", backup_hash.split(" ")[0]
 
     def parse_mbuffer_progress_log(self, mbuffer_log: str) -> (int, int, int):
         # mbuffer: in @  164 MiB/s, out @  164 MiB/s, 3102 MiB total, buffer  99% full,  61% done

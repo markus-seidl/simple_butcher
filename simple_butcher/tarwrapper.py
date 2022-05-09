@@ -164,7 +164,8 @@ class TarWrapper(Wrapper):
                 tape_no=archive_volume_no.tape_no,
                 volume_no=archive_volume_no.volume_no,
                 tar_line=line,
-                archive_sha256=None
+                archive_hash=None,
+                hash_type=None
             ))
 
         return ret

@@ -14,6 +14,7 @@ from tapeinfowrapper import TapeinfoWrapper
 from database import BackupRecord, BackupDatabase, BackupDatabaseRepository, DB_ROOT, BackupInfo, \
     INCREMENTAL_INDEX_FILENAME
 from mbufferwrapper import MBufferWrapper
+from mtstwrapper import MTSTWrapper
 
 
 class Backup:
@@ -28,6 +29,7 @@ class Backup:
         self.compression_v2 = ZstdAgeV2()
         self.tapeinfo = TapeinfoWrapper(config)
         self.mbuffer = MBufferWrapper(config)
+        self.mtst = MTSTWrapper(config.tape, config.tape_dummy)
         self.database = None
 
     def do(self):
@@ -35,6 +37,7 @@ class Backup:
         self.database.start_backup()
         backup_time_start = time.time()
 
+        tape_start_index, _, _ = self.mtst.current_position()
         base_backup_name = None  # self.prepare_incremental_file(self.database)
 
         self.tar_output_file, tar_process, tar_thread = self.tar.main_backup_full(
@@ -56,8 +59,10 @@ class Backup:
                 archive_volume_no, tape_changed = self.handle_archive(archive_volume_no)
                 if tape_changed:
                     logging.info(f"################ Tape Changed to {archive_volume_no.tape_no} ################")
-                logging.info(f"Tape status {file_size_format(archive_volume_no.bytes_written)} written, "
-                             f"{file_size_format(initial_tape_size.remaining_bytes)} remaining")
+                logging.info(
+                    f"Tape status {file_size_format(archive_volume_no.bytes_written)} written, "
+                    f"{file_size_format(initial_tape_size.remaining_bytes)} remaining"
+                )
 
         if os.path.exists(self.tar_output_file):  # backup also last output file
             archive_volume_no, tape_changed = self.handle_archive(archive_volume_no, last_archive=True)
@@ -71,7 +76,8 @@ class Backup:
             tapes=archive_volume_no.tape_no,
             volumes=archive_volume_no.volume_no,
             base_backup=base_backup_name,
-            incremental_time=self.config.incremental_time
+            incremental_time=self.config.incremental_time,
+            tape_start_index=tape_start_index
         ))
         logging.info("Backup process has finished.")
 
@@ -180,9 +186,10 @@ class Backup:
 
         archive_volume_no.incr_volume_no()
 
-    def update_backup_records(self, backup_records: [BackupRecord], archive_sha256) -> [BackupRecord]:
+    def update_backup_records(self, backup_records: [BackupRecord], archive_hash: (str, str)) -> [BackupRecord]:
         for record in backup_records:
-            record.archive_sha256 = archive_sha256
+            record.hash_type = archive_hash[0]
+            record.archive_hash = archive_hash[1]
 
         return backup_records
 
