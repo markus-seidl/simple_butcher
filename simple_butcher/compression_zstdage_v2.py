@@ -97,6 +97,7 @@ class ZstdAgeV2(Compression):
                 break
 
         s_out, s_err = all_process.communicate()
+        all_process.wait()
 
         if all_process.returncode != 0:
             raise OSError(s_err.decode("UTF-8"))
