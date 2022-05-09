@@ -13,6 +13,7 @@ if sys.platform == "linux":
     MT_ST = "/usr/bin/mt-st"
     AGE = "/usr/bin/age"
     TEE = "/usr/bin/tee"
+    MD5SUM = "/usr/bin/md5sum"
 elif sys.platform == "darwin":
     TAR = "/usr/local/bin/gtar"
     SEVEN_Z = "/usr/local/bin/7z"
@@ -26,3 +27,4 @@ elif sys.platform == "darwin":
     MT_ST = None
     AGE = "/usr/local/bin/age"
     TEE = "/usr/bin/tee"
+    MD5SUM = "/usr/local/bin/md5sum"

@@ -17,5 +17,7 @@ class BackupConfig:
     backup_name: str
     base_of_backup: int
     incremental_time: int
+    excludes: [str]
+
 
 
