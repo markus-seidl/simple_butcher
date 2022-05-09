@@ -136,7 +136,7 @@ class ZstdAgeV2(Compression):
                 temp = f.readlines()
 
             if len(temp) <= 0:
-                return -1, -1, -1
+                return -1, -1
 
             last_line = temp[-1]
 
@@ -153,7 +153,7 @@ class ZstdAgeV2(Compression):
         except:
             pass
 
-        return -1, -1, -1
+        return -1, -1
 
     def parse_mbuffer_summary_log(self, mbuffer_log: str) -> int:
         # mbuffer: in @  164 MiB/s, out @  164 MiB/s, 3102 MiB total, buffer  99% full,  61% done
