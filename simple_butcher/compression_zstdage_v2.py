@@ -79,7 +79,7 @@ class ZstdAgeV2(Compression):
         start_time = time.time()
         logging.debug(f"all cmd: {all_cmd}")
         all_process = subprocess.Popen(
-            all_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            all_cmd, shell=True
         )
 
         while True:
@@ -125,7 +125,7 @@ class ZstdAgeV2(Compression):
 
         with open(hash_output, "r") as f:
             backup_hash = f.readlines()[0]
-            return "md5sum", backup_hash.split(" ")[0]
+            return "md5sum", backup_hash
 
     def parse_mbuffer_progress_log(self, mbuffer_log: str) -> (int, int, int):
         # mbuffer: in @  164 MiB/s, out @  164 MiB/s, 3102 MiB total, buffer  99% full,  61% done
@@ -180,3 +180,7 @@ class ZstdAgeV2(Compression):
 
     def overall_compression_ratio(self) -> float:
         return self.all_bytes_read / float(self.all_bytes_written)
+
+
+if __name__ == '__main__':
+    ZstdAgeV2().parse_mbuffer_progress_log("/mnt/scratch/mbuffer.log")
