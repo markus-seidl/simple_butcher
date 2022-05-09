@@ -27,13 +27,15 @@ class MTSTWrapper(Wrapper):
             return -1, -1, -1
 
         output = self._exec("status")
+        output_lines = output.decode("UTF-8").split(os.linesep)
 
-        # File number=1, block number=0, partition=0
-        s = re.search(
-            "File number=(\\d+), block number=(\\d+), partition=(\\d+)", last_line, re.IGNORECASE
-        )
-        if s:
-            return int(s.group(1)), int(s.group(2)), int(s.group(3))
+        for line in output_lines:
+            # File number=1, block number=0, partition=0
+            s = re.search(
+                "File number=(\\d+), block number=(\\d+), partition=(\\d+)", last_line, re.IGNORECASE
+            )
+            if s:
+                return int(s.group(1)), int(s.group(2)), int(s.group(3))
 
         return -1, -1, -1
 
@@ -48,4 +50,4 @@ class MTSTWrapper(Wrapper):
 
 
 if __name__ == '__main__':
-    print(MTSTWrapper("/dev/nst0").current_position())
+    print(MTSTWrapper("/dev/nst0", None).current_position())
