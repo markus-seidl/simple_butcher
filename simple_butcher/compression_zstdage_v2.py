@@ -74,7 +74,7 @@ class ZstdAgeV2(Compression):
             sinks.append(output_file_fp)
         else:
             mbuffer_process = subprocess.Popen(
-                [MBUFFER, "-P", "90", "-l", mbuffer_log, "-q", "-o", config.tape, "-s", "512k"], stdin=subprocess.PIPE
+                [MBUFFER, "-P", "90", "-l", mbuffer_log, "-q", "-m", "5G", "-o", config.tape, "-s", "512k"], stdin=subprocess.PIPE
             )
             sinks.append(mbuffer_process.stdin)
 
