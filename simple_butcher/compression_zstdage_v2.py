@@ -87,7 +87,8 @@ class ZstdAgeV2(Compression):
                 logging.info(f"C/E/SHA ... {file_size_format(os.path.getsize(output_file))}")
 
             if os.path.exists(mbuffer_log):  # tape mode
-                bytes_written, buffer_percent, done_percent = self.parse_mbuffer_progress_log(mbuffer_log)
+                bytes_written, buffer_percent = self.parse_mbuffer_progress_log(mbuffer_log)
+                done_percent = "%03.0f" % (bytes_written / original_size) * 100.0
                 logging.info(f"C/E/M/SHA ... {file_size_format(bytes_written)} - {done_percent} done")
 
             time.sleep(1)
@@ -127,7 +128,7 @@ class ZstdAgeV2(Compression):
             backup_hash = f.readlines()[0]
             return "md5sum", backup_hash
 
-    def parse_mbuffer_progress_log(self, mbuffer_log: str) -> (int, int, int):
+    def parse_mbuffer_progress_log(self, mbuffer_log: str) -> (int, int):
         # mbuffer: in @  164 MiB/s, out @  164 MiB/s, 3102 MiB total, buffer  99% full,  61% done
         # summary: 5119 MiByte in 37.0sec - average of  138 MiB/s
         try:
@@ -139,16 +140,16 @@ class ZstdAgeV2(Compression):
 
             last_line = temp[-1]
 
-            if "done" in last_line:
+            if "buffer" in last_line:
                 s = re.search(
-                    ", +(\\d+) +MiB total, buffer +(\\d+)% full, +(\\d+)% done", last_line, re.IGNORECASE
+                    ", +(\\d+) +MiB total, buffer +(\\d+)% full", last_line, re.IGNORECASE
                 )
                 if s:
                     bytes_written = int(s.group(1)) * 1000 * 1000
                     buffer_percent = int(s.group(2))
-                    done_percent = int(s.group(3))
+                    # done_percent = int(s.group(3))
 
-                    return bytes_written, buffer_percent, done_percent
+                    return bytes_written, buffer_percent
         except:
             pass
 
