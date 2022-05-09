@@ -129,7 +129,7 @@ class ZstdAgeV2(Compression):
             return "md5sum", backup_hash
 
     def parse_mbuffer_progress_log(self, mbuffer_log: str) -> (int, int):
-        # mbuffer: in @  164 MiB/s, out @  164 MiB/s, 3102 MiB total, buffer  99% full,  61% done
+        # mbuffer: in @  164 MiB/s, out @  164 MiB/s, 3102 MiB total, buffer  99% full
         # summary: 5119 MiByte in 37.0sec - average of  138 MiB/s
         try:
             with open(mbuffer_log, "r") as f:
@@ -156,7 +156,7 @@ class ZstdAgeV2(Compression):
         return -1, -1
 
     def parse_mbuffer_summary_log(self, mbuffer_log: str) -> int:
-        # mbuffer: in @  164 MiB/s, out @  164 MiB/s, 3102 MiB total, buffer  99% full,  61% done
+        # mbuffer: in @  164 MiB/s, out @  164 MiB/s, 3102 MiB total, buffer  99% full
         # summary: 5119 MiByte in 37.0sec - average of  138 MiB/s
         try:
             with open(mbuffer_log, "r") as f:
