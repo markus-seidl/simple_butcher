@@ -88,7 +88,7 @@ class ZstdAgeV2(Compression):
 
             if os.path.exists(mbuffer_log):  # tape mode
                 bytes_written, buffer_percent = self.parse_mbuffer_progress_log(mbuffer_log)
-                done_percent = "%03.0f" % (bytes_written / int(original_size)) * 100
+                done_percent = "%03.0f" % ((bytes_written / float(original_size)) * 100.0)
                 logging.info(f"C/E/M/SHA ... {file_size_format(bytes_written)} - {done_percent} done")
 
             time.sleep(1)
