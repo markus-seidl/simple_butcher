@@ -32,10 +32,10 @@ class Sha256Wrapper(Wrapper):
         )
         sha_thread.start()
 
-    def wait_for_sha_sum(self):
+    def wait_for_sha_sum(self) -> (str, str):
         while self.sha_sum is None:
             time.sleep(0.1)
-        return self.sha_sum
+        return "sha256sum", self.sha_sum
 
     def _wait_for_process(self, sha_process):
         s_out, s_err = sha_process.communicate()

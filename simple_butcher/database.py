@@ -18,7 +18,8 @@ TAR_INPUT_FILE_LIST = "tar_input_file_list"
 class BackupRecord:
     tape_no: int
     volume_no: int
-    archive_sha256: str
+    archive_hash: str
+    hash_type: str
     tar_line: str
 
     def to_json(self):
@@ -34,6 +35,7 @@ class BackupInfo:
     volumes: int
     base_backup: str
     incremental_time: int
+    tape_start_index: int
 
     def to_json(self):
         return json.dumps(dataclasses.asdict(self))
@@ -47,6 +49,7 @@ class BackupInfo:
             tapes=j['tapes'],
             volumes=j['volumes'],
             base_backup=j['base_backup'] if 'base_backup' in j else None,
+            tape_start_index=j['tape_start_index'] if 'tape_start_index' in j else None,
             incremental_time=j['incremental_time'] if 'incremental_time' in j else None
         )
 

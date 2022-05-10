@@ -13,7 +13,7 @@ from database import BackupRecord, BackupDatabase
 from exe_paths import TAR, FIND
 
 COMPRESS_TAR_BACKUP_FULL_CMD = \
-    '{cmd} cvM -L{chunk_size}G ' \
+    '{cmd} cvM {excludes} -L{chunk_size}G ' \
     '--new-volume-script="python simple_butcher/archive_finalizer.py \"{communication_file}\"" ' \
     '--label="{backup_name}" ' \
     ' {tar_incremental_stuff} ' \
@@ -53,9 +53,15 @@ class TarWrapper(Wrapper):
             source = ""
             incremental_stuff = INCREMENTAL_STUFF.format(input_file_list=input_file_list)
 
+        excludes = ""
+        if config.excludes:
+            for exclude in config.excludes:
+                excludes += f' --exclude "{exclude[0]}"'
+
         tar_log_file = database.tar_log_file()
         tar_cmd = COMPRESS_TAR_BACKUP_FULL_CMD.format(
             cmd=TAR,
+            excludes=excludes,
             chunk_size=config.chunk_size,
             backup_name=config.backup_name,
             output_file=tar_output_file,
@@ -66,7 +72,7 @@ class TarWrapper(Wrapper):
             incremental_stuff=incremental_stuff
         )
 
-        logging.debug(f"tar full backup cmd: {tar_cmd}")
+        logging.info(f"Tar full backup cmd: {tar_cmd}")
 
         tar_process = subprocess.Popen(tar_cmd, shell=True)  # , stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -92,8 +98,9 @@ class TarWrapper(Wrapper):
 
         return database.tar_input_file_list()
 
-    def _wait_for_process_finish_full_backup(self, process: subprocess.Popen, backup_bar, tar_log_file: str,
-                                             output_file: str):
+    def _wait_for_process_finish_full_backup(
+            self, process: subprocess.Popen, backup_bar, tar_log_file: str, output_file: str
+    ):
         self._update_tar_progressbar(backup_bar, process, tar_log_file, output_file)
 
         _, s_err = process.communicate()
@@ -164,7 +171,8 @@ class TarWrapper(Wrapper):
                 tape_no=archive_volume_no.tape_no,
                 volume_no=archive_volume_no.volume_no,
                 tar_line=line,
-                archive_sha256=None
+                archive_hash=None,
+                hash_type=None
             ))
 
         return ret

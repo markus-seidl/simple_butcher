@@ -19,7 +19,7 @@ def do():
     backup = subparsers.add_parser("backup")
     backup.add_argument("--backup-repository", help="Name of the backup repository", default="default")
     backup.add_argument("--ramdisk", help="Ramdisk for caching parts, should fit a single part")
-    backup.add_argument("--compression", help="only zstd_pipe is supported", default="zstd_pipe")
+    backup.add_argument("--compression", help="only zstd_pipe is supported", default="zstd_pipe_v2")
     backup.add_argument("--source", help="Source directory", required=True)
     backup.add_argument("--password-file", help="Password in plain text as file", default="./password.key")
     backup.add_argument("--tape-buffer", help="GBs left before changing to the next tape", default=10, type=int)
@@ -27,11 +27,9 @@ def do():
     backup.add_argument("--tape", help="Tape device", default="/dev/nst0")
     backup.add_argument("--tape-dummy", help="Used for local debugging, if specified the tape isn't used.")
     backup.add_argument("--chunk-size", help="Backups are written in single chunks. Size in GB", default=10, type=int)
-    # backup.add_argument("--base-of-backup",
-    #                     help="Number of backup to base this backup of, used for incremental backup. -1 is a good choice for incremental backups.",
-    #                     default=None, type=int)
     backup.add_argument("--incremental-time", help="If set only includes files modified in the past n days",
                         default=None, required=False, type=int)
+    backup.add_argument("--exclude", help="tar exclude option", default=None, required=False, action='append', nargs='+')
 
     list_backups = subparsers.add_parser("list-backups")
     list_backups.add_argument("--backup_repository", help="Name of the backup repository", default="default")
@@ -62,7 +60,8 @@ def do_backup(args):
         chunk_size=args.chunk_size,
         backup_name=datetime.datetime.now().isoformat(timespec='seconds'),
         base_of_backup=None,
-        incremental_time=args.incremental_time
+        incremental_time=args.incremental_time,
+        excludes=args.exclude
     )
 
     with open(config.password_file, 'r') as f:
@@ -87,7 +86,8 @@ def do_list_backup(args):
         chunk_size=None,
         backup_name=None,
         base_of_backup=None,
-        incremental_time=None
+        incremental_time=None,
+        excludes=None
     )
 
     ListBackups(config).do()
