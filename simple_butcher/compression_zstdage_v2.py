@@ -51,6 +51,7 @@ class ZstdAgeV2(Compression):
 
         start_piping = time.time()
         last_report_time = start_piping
+        bytes_written = 0
 
         while True:
             bytes_written, _ = self.parse_mbuffer_progress_log(mbuffer_log)
@@ -69,6 +70,7 @@ class ZstdAgeV2(Compression):
         if mbuffer_process.returncode != 0:
             raise OSError(mbuffer_stderr)
 
+        bytes_written, _ = self.parse_mbuffer_progress_log(mbuffer_log)
         logging.info("C/E/xxx done with " + report_performance_bytes(start_piping, bytes_written))
         self.all_bytes_written += bytes_written
 
@@ -83,23 +85,22 @@ class ZstdAgeV2(Compression):
         # summary: 5119 MiByte in 37.0sec - average of  138 MiB/s
         try:
             with open(mbuffer_log, "r") as f:
-                temp = f.readlines()
+                lines = f.readlines()
 
-            if len(temp) <= 0:
+            if len(lines) <= 0:
                 return -1, -1
 
-            last_line = temp[-1]
+            for line in reversed(lines):
+                if "buffer" in line:
+                    s = re.search(
+                        ", +(\\d+) +MiB total, buffer +(\\d+)% full", line, re.IGNORECASE
+                    )
+                    if s:
+                        bytes_written = int(s.group(1)) * 1000 * 1000
+                        buffer_percent = int(s.group(2))
+                        # done_percent = int(s.group(3))
 
-            if "buffer" in last_line:
-                s = re.search(
-                    ", +(\\d+) +MiB total, buffer +(\\d+)% full", last_line, re.IGNORECASE
-                )
-                if s:
-                    bytes_written = int(s.group(1)) * 1000 * 1000
-                    buffer_percent = int(s.group(2))
-                    # done_percent = int(s.group(3))
-
-                    return bytes_written, buffer_percent
+                        return bytes_written, buffer_percent
         except:
             pass
 
@@ -148,4 +149,4 @@ class ZstdAgeV2(Compression):
 
 
 if __name__ == '__main__':
-    ZstdAgeV2().parse_mbuffer_progress_log("/mnt/scratch/mbuffer.log")
+    ZstdAgeV2().parse_mbuffer_progress_log_last_line("/mnt/scratch/mbuffer.log")
