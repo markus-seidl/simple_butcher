@@ -59,8 +59,10 @@ class Backup:
                 archive_volume_no, tape_changed = self.handle_archive(archive_volume_no)
                 if tape_changed:
                     logging.info(f"################ Tape Changed to {archive_volume_no.tape_no} ################")
+
+                initial_tape_size = self.tapeinfo.size_statistics()
                 logging.info(
-                    f"Tape status {file_size_format(archive_volume_no.bytes_written)} written, "
+                    f"Tape status {file_size_format(initial_tape_size.written_bytes)} written, "
                     f"{file_size_format(initial_tape_size.remaining_bytes)} remaining"
                 )
 
