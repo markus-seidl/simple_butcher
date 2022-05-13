@@ -31,7 +31,7 @@ def do():
     backup.add_argument("--exclude", help="tar exclude option", default=None, required=False, action='append', nargs='+')
 
     list_backups = subparsers.add_parser("list-backups")
-    list_backups.add_argument("--backup_repository", help="Name of the backup repository", default="default")
+    list_backups.add_argument("--backup-repository", help="Name of the backup repository", default="default")
 
     args = parser.parse_args()
 

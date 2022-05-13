@@ -83,7 +83,7 @@ class ZstdAgeV2(Compression):
         last_report_time = start_piping
         bytes_piped = 0
         while True:
-            data = age_process.stdout.read(1024)
+            data = age_process.stdout.read(1024 * 512)  # 512kb
             bytes_piped += len(data)
             if data:
                 for sink in sinks:

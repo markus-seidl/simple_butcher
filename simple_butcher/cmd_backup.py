@@ -73,9 +73,9 @@ class Backup:
             time_start=int(backup_time_start),
             time_end=int(time.time()),
             bytes_written=archive_volume_no.bytes_written,
-            tapes=archive_volume_no.tape_no,
-            volumes=archive_volume_no.volume_no,
-            base_backup=base_backup_name,
+            tapes=archive_volume_no.tape_no + 1,  # no vs count!
+            volumes=archive_volume_no.volume_no + 1,  # no vs count!
+            base_backup=None,
             incremental_time=self.config.incremental_time,
             tape_start_index=tape_start_index
         ))
@@ -204,7 +204,8 @@ class Backup:
         written_bytes = self.tapeinfo.size_statistics().written_bytes
         remaining_bytes = self.tapeinfo.size_statistics().remaining_bytes
 
-        buffer_bytes = 150 * 1000 * 1000 * 1000  # on my LTO-6 tapes I can only write until 115GB are remaining
+        # on my LTO-6 tapes I can only write until 115GB are remaining, maybe do some --tapeaware on mbuffer?
+        buffer_bytes = self.config.tape_buffer * 1000 * 1000 * 1000
         return file_size_bytes + buffer_bytes < remaining_bytes
 
     # def prepare_incremental_file(self, current_backup: BackupDatabase) -> str:

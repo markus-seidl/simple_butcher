@@ -3,25 +3,6 @@ import os
 from dataclasses import dataclass
 
 
-# from tqdm import tqdm
-#
-# def create_tqdm(iterable=None, desc=None, total=None, leave=True, file=None,
-#                 mininterval=0.1, maxinterval=10.0, miniters=None,
-#                 ascii=None, disable=False, unit='it', unit_scale=False,
-#                 dynamic_ncols=False, smoothing=0.3, bar_format=None, initial=0,
-#                 position=None, postfix=None, unit_divisor=1000, write_bytes=None,
-#                 lock_args=None, nrows=None, colour=None, delay=0, gui=False,
-#                 **kwargs):
-#     return tqdm(ascii=True, ncols=100,
-#                 iterable=iterable, desc=desc, total=total, leave=leave, file=file,
-#                 mininterval=mininterval, maxinterval=maxinterval, miniters=miniters,
-#                 disable=disable, unit=unit, unit_scale=unit_scale,
-#                 dynamic_ncols=dynamic_ncols, smoothing=smoothing, bar_format=bar_format, initial=initial,
-#                 position=position, postfix=postfix, unit_divisor=unit_divisor, write_bytes=write_bytes,
-#                 lock_args=lock_args, nrows=nrows, colour=colour, delay=delay, gui=gui,
-#                 **kwargs)
-
-
 def file_size_format(size):
     size = size / 1024.0 / 1024.0  # mb
     if size < 1024:
