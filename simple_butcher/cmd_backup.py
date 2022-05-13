@@ -144,7 +144,13 @@ class Backup:
         if self.config.tape_dummy:
             archive_volume_no.bytes_written += int(tar_archive_file_size) # fake for no-tape
         else:
-            archive_volume_no.bytes_written = self.tapeinfo.size_statistics().written_bytes
+            archive_volume_no.bytes_written = self.compression_v2.all_bytes_written
+
+        ratio = "%.2f" % (self.compression_v2.all_bytes_read / self.compression_v2.all_bytes_written * 100)
+        logging.info(
+            f"Statistics {file_size_format(self.compression_v2.all_bytes_written)} written, "
+            f"{file_size_format(self.compression_v2.all_bytes_read)} read = {ratio}"
+        )
 
         tar_contents = self.update_backup_records(tar_contents, final_archive_hash)
         self.database.store(tar_contents)

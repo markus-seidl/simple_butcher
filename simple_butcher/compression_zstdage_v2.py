@@ -45,8 +45,8 @@ class ZstdAgeV2(Compression):
         )
 
         mbuffer_process = subprocess.Popen(
-            [MBUFFER, "-P", "90", "-l", mbuffer_log, "-q", "-m", "5G", "-o", config.tape, "-s", "512k", "--md5"],
-            stdin=age_process.stdout
+            [MBUFFER, "-P", "90", "-l", mbuffer_log, "-q", "-m", "10G", "-o", config.tape, "-s", "512k", "--md5"],
+            stdin=age_process.stdout, stdout=subprocess.PIPE
         )
 
         start_piping = time.time()
@@ -55,7 +55,7 @@ class ZstdAgeV2(Compression):
         while True:
             bytes_written, _ = self.parse_mbuffer_progress_log(mbuffer_log)
 
-            if time.time() - last_report_time >= 1:
+            if time.time() - last_report_time >= 1 and bytes_written > 0:
                 last_report_time = time.time()
                 logging.info(f"C/E/xxx written {file_size_format(bytes_written)}")
 
@@ -67,7 +67,9 @@ class ZstdAgeV2(Compression):
         if mbuffer_process.returncode != 0:
             raise OSError(mbuffer_stderr)
 
+        bytes_written, _ = self.parse_mbuffer_progress_log(mbuffer_log)
         logging.info("C/E/xxx done with " + report_performance_bytes(start_piping, bytes_written))
+        self.all_bytes_written += bytes_written
 
         os.remove(input_file)
 
