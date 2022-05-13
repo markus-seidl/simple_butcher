@@ -14,25 +14,6 @@ from database import BackupRecord
 from exe_paths import ZSTD, AGE, TEE, MBUFFER, SHA256SUM, MD5SUM
 from compression import Compression
 
-# PIPE_CMD_TAPE = '{zstd_exe} -3 -T0 {in_file} --stdout | ' \
-#                 '{age_exe} -e -i {age_key} | ' \
-#                 '{tee_exe} ' \
-#                 ' >( {mbuffer_exe} -P 90 -l {mbuffer_logfile} -q -o {tape} -s {tape_blocksize} )' \
-#                 ' >( {sha_exe} -b > {hash_output} ) ' \
-#                 ' > /dev/null '
-
-# PIPE_CMD_DUMMY = '{zstd_exe} -3 -T0 {in_file} --stdout | ' \
-#                  '{age_exe} -e -i {age_key} | ' \
-#                  '{tee_exe} ' \
-#                  ' >( {sha_exe} -b > {hash_output} ) ' \
-#                  ' > {output_file} '
-
-# zstd -3 -T0 "$1" --stdout | age -e -i "$2" | tee  >( md5sum -b > "$3" ) > "$4"
-PIPE_CMD_DUMMY = './simple_butcher/zstdage_v2_dummy_helper.sh "{in_file}" "{age_key}" "{hash_output}" "{output_file}"'
-
-# zstd -4 -T0 "$1" --stdout | age -e -i "$2" | tee >( mbuffer -P 90 -l "$3" -q -o "$4" -m 5G -s "512k" ) >( md5sum -b > "$5" ) > /dev/null
-PIPE_CMD_TAPE = './simple_butcher/zstdage_v2_tape_helper.sh "{in_file}" "{age_key}" "{mbuffer_logfile}" "{tape}" "{hash_output}"'
-
 
 class ZstdAgeV2(Compression):
     """
@@ -62,56 +43,35 @@ class ZstdAgeV2(Compression):
         age_process = subprocess.Popen(
             [AGE, "-e", "-i", config.password_file], stdin=zstd_process.stdout, stdout=subprocess.PIPE
         )
-        hashsum_process = subprocess.Popen(
-            [MD5SUM, "-b"], stdin=subprocess.PIPE, stdout=subprocess.PIPE
-        )
-        sinks = [hashsum_process.stdin]
 
-        output_file_fp = None
-        mbuffer_process = None
-        if config.tape_dummy is not None:
-            output_file_fp = open(output_file, "bw")
-            sinks.append(output_file_fp)
-        else:
-            mbuffer_process = subprocess.Popen(
-                [MBUFFER, "-P", "90", "-l", mbuffer_log, "-q", "-m", "5G", "-o", config.tape, "-s", "512k"],
-                stdin=subprocess.PIPE
-            )
-            sinks.append(mbuffer_process.stdin)
+        mbuffer_process = subprocess.Popen(
+            [MBUFFER, "-P", "90", "-l", mbuffer_log, "-q", "-m", "5G", "-o", config.tape, "-s", "512k", "--md5"],
+            stdin=age_process.stdout
+        )
 
         start_piping = time.time()
         last_report_time = start_piping
-        bytes_piped = 0
+
         while True:
-            data = age_process.stdout.read(1024 * 512)  # 512kb
-            bytes_piped += len(data)
-            if data:
-                for sink in sinks:
-                    sink.write(data)
-            else:
-                break
+            bytes_written, _ = self.parse_mbuffer_progress_log(mbuffer_log)
 
             if time.time() - last_report_time >= 1:
                 last_report_time = time.time()
-                logging.info(f"C/E/xxx written {file_size_format(bytes_piped)}")
-        # ---
+                logging.info(f"C/E/xxx written {file_size_format(bytes_written)}")
 
-        hash_out, hash_err = hashsum_process.communicate()
+            if mbuffer_process.poll() is not None:
+                break
 
-        if mbuffer_process:
-            mbuffer_out, mbuffer_err = mbuffer_process.communicate()
+        mbuffer_stdout, mbuffer_stderr = mbuffer_process.communicate()
 
-            if mbuffer_process.returncode != 0:
-                raise OSError(mbuffer_err)
+        if mbuffer_process.returncode != 0:
+            raise OSError(mbuffer_stderr)
 
-        if hashsum_process.returncode != 0:
-            raise OSError(hash_err)
-
-        logging.info("C/E/xxx done with " + report_performance_bytes(start_piping, bytes_piped))
+        logging.info("C/E/xxx done with " + report_performance_bytes(start_piping, bytes_written))
 
         os.remove(input_file)
 
-        hash_out = hash_out.decode("UTF-8").split(os.linesep)[0]
+        hash_out = self.parse_mbuffer_md5(mbuffer_log)
 
         return "md5sum", hash_out.replace(" *-", "")
 
@@ -141,6 +101,20 @@ class ZstdAgeV2(Compression):
             pass
 
         return -1, -1
+
+    def parse_mbuffer_md5(self, mbuffer_log: str) -> (str):
+        # MD5 hash: 289067bcd5472f102e946f8b71c7729b
+        try:
+            with open(mbuffer_log, "r") as f:
+                lines = f.readlines()
+
+                for line in lines:
+                    if line.startswith("MD5 hash:"):
+                        return line.replace("MD5 hash:", "").strip()
+        except:
+            pass
+
+        return None
 
     def parse_mbuffer_summary_log(self, mbuffer_log: str) -> int:
         # mbuffer: in @  164 MiB/s, out @  164 MiB/s, 3102 MiB total, buffer  99% full

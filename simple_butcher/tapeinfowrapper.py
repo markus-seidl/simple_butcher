@@ -7,7 +7,7 @@ from base_wrapper import Wrapper
 from config import BackupConfig
 from common import ArchiveVolumeNumber
 from database import BackupRecord
-from exe_paths import SG_LOGS
+from exe_paths import SG_LOGS, TAPEINFO
 
 TAPE_CMD = '{cmd} -f {tape}'
 LOG_CMD = '{cmd} -a {tape}'
@@ -78,16 +78,16 @@ class TapeinfoWrapper(Wrapper):
 if __name__ == '__main__':
     config = BackupConfig(
         backup_repository=None,
-        ramdisk=None,
         compression=None,
         source=None,
         password_file=None,
-        password=None,
-        tape_length=None,
         tempdir=None,
         tape="/dev/nst0",
         tape_dummy=None,
         chunk_size=None,
         backup_name=None,
+        tape_buffer=None,
+        excludes=None,
+        incremental_time=None
     )
     print(TapeinfoWrapper(config).size_statistics())

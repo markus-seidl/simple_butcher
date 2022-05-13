@@ -135,19 +135,18 @@ class Backup:
             tar_archive_file_size: float, tar_contents
     ):
 
-        final_archive_sha = self.compression_v2.do(
+        final_archive_hash = self.compression_v2.do(
             config=self.config,
             archive_volume_no=archive_volume_no,
             input_file=tar_archive_file
         )
 
         if self.config.tape_dummy:
-            # fake for no-tape
-            archive_volume_no.bytes_written += int(tar_archive_file_size)
+            archive_volume_no.bytes_written += int(tar_archive_file_size) # fake for no-tape
         else:
             archive_volume_no.bytes_written = self.tapeinfo.size_statistics().written_bytes
 
-        tar_contents = self.update_backup_records(tar_contents, final_archive_sha)
+        tar_contents = self.update_backup_records(tar_contents, final_archive_hash)
         self.database.store(tar_contents)
 
         archive_volume_no.incr_volume_no()
@@ -173,8 +172,7 @@ class Backup:
         )
         # Determine if next tape is necessary
         if self.config.tape_dummy:
-            # fake for no-tape
-            archive_volume_no.bytes_written += int(final_archive_size)
+            archive_volume_no.bytes_written += int(final_archive_size)  # fake for no-tape
         else:
             archive_volume_no.bytes_written = self.tapeinfo.size_statistics().written_bytes
 
