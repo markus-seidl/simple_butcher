@@ -54,6 +54,7 @@ def report_performance_bytes(start_time: float, bytes: int) -> str:
     performance = file_size / elapsed_time
     return f"{file_size_format(file_size)} in {elapsed_time_str}s = {file_size_format(performance)}/s"
 
+
 @dataclass
 class ArchiveVolumeNumber:
     tape_no: int

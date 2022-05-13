@@ -1,17 +1,17 @@
 from common import file_size_format
-from config import BackupConfig
+from config import ListBackupConfig
 from database import BackupRecord, BackupDatabase, BackupDatabaseRepository, DB_ROOT
 
 from rich.console import Console
 from rich.table import Table
 
-class ListBackups:
-    def __init__(self, config: BackupConfig):
-        self.config = config
 
-    def do(self):
+class ListBackups:
+    def __init__(self, config: ListBackupConfig):
+        self.config = config
         self.repository = BackupDatabaseRepository(DB_ROOT, self.config.backup_repository)
 
+    def do(self):
         table = Table(title="Backups")
         table.add_column("No")
         table.add_column("Directory", no_wrap=True)

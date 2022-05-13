@@ -4,7 +4,7 @@ import argparse
 import datetime
 import os
 
-from config import BackupConfig
+from config import BackupConfig, ListBackupConfig
 from cmd_backup import Backup
 from cmd_list_backups import ListBackups
 
@@ -18,11 +18,10 @@ def do():
 
     backup = subparsers.add_parser("backup")
     backup.add_argument("--backup-repository", help="Name of the backup repository", default="default")
-    backup.add_argument("--ramdisk", help="Ramdisk for caching parts, should fit a single part")
     backup.add_argument("--compression", help="only zstd_pipe is supported", default="zstd_pipe_v2")
     backup.add_argument("--source", help="Source directory", required=True)
     backup.add_argument("--password-file", help="Password in plain text as file", default="./password.key")
-    backup.add_argument("--tape-buffer", help="GBs left before changing to the next tape", default=10, type=int)
+    backup.add_argument("--tape-buffer", help="GBs left before changing to the next tape", default=150, type=int)
     backup.add_argument("--tempdir", help="Store tar output", default="./temp")
     backup.add_argument("--tape", help="Tape device", default="/dev/nst0")
     backup.add_argument("--tape-dummy", help="Used for local debugging, if specified the tape isn't used.")
@@ -35,7 +34,6 @@ def do():
     list_backups.add_argument("--backup_repository", help="Name of the backup repository", default="default")
 
     args = parser.parse_args()
-    # print(args)
 
     if args.command == 'backup':
         do_backup(args)
@@ -48,18 +46,15 @@ def do():
 def do_backup(args):
     config = BackupConfig(
         backup_repository=args.backup_repository,
-        ramdisk=args.ramdisk,
         compression=args.compression,
         source=args.source,
         password_file=args.password_file,
-        password="",
         tape_buffer=args.tape_buffer,
         tempdir=args.tempdir,
         tape=args.tape,
         tape_dummy=args.tape_dummy,
         chunk_size=args.chunk_size,
         backup_name=datetime.datetime.now().isoformat(timespec='seconds'),
-        base_of_backup=None,
         incremental_time=args.incremental_time,
         excludes=args.exclude
     )
@@ -72,22 +67,8 @@ def do_backup(args):
 
 
 def do_list_backup(args):
-    config = BackupConfig(
+    config = ListBackupConfig(
         backup_repository=args.backup_repository,
-        ramdisk=None,
-        compression=None,
-        source=None,
-        password_file=None,
-        password=None,
-        tape_buffer=None,
-        tempdir=None,
-        tape=None,
-        tape_dummy=None,
-        chunk_size=None,
-        backup_name=None,
-        base_of_backup=None,
-        incremental_time=None,
-        excludes=None
     )
 
     ListBackups(config).do()
