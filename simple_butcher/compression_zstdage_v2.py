@@ -27,7 +27,7 @@ class ZstdAgeV2(Compression):
         self.all_bytes_written = 0
 
     def do(self, config: BackupConfig, archive_volume_no: ArchiveVolumeNumber, input_file: str) -> (str, str):
-        output_file = config.ramdisk + "/%09i.tar.zst.age" % archive_volume_no.volume_no
+        output_file = config.tempdir + "/%09i.tar.zst.age" % archive_volume_no.volume_no
 
         original_size = os.path.getsize(input_file)
         self.all_bytes_read += original_size
