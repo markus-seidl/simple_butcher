@@ -148,13 +148,15 @@ class Backup:
         else:
             archive_volume_no.bytes_written = self.compression_v2.all_bytes_written
 
-        ratio = "%.2f" % (self.compression_v2.all_bytes_read / self.compression_v2.all_bytes_written * 100)
+        ratio = "%.2f" % (self.compression_v2.all_bytes_written / self.compression_v2.all_bytes_read)
         logging.info(
-            f"Statistics {file_size_format(self.compression_v2.all_bytes_written)} written, "
-            f"{file_size_format(self.compression_v2.all_bytes_read)} read = {ratio}"
+            f"Statistics "
+            f"{file_size_format(self.compression_v2.all_bytes_read)} read, "
+            f"{file_size_format(self.compression_v2.all_bytes_written)} written = {ratio} "
         )
 
-        tar_contents = self.update_backup_records(tar_contents, final_archive_hash)
+        tape_file_number, _, _ = self.mtst.current_position()
+        tar_contents = self.update_backup_records(tar_contents, final_archive_hash, tape_file_number - 1)
         self.database.store(tar_contents)
 
         archive_volume_no.incr_volume_no()
@@ -192,10 +194,13 @@ class Backup:
 
         archive_volume_no.incr_volume_no()
 
-    def update_backup_records(self, backup_records: [BackupRecord], archive_hash: (str, str)) -> [BackupRecord]:
+    def update_backup_records(
+            self, backup_records: [BackupRecord], archive_hash: (str, str), tape_file_number: int = -1
+    ) -> [BackupRecord]:
         for record in backup_records:
             record.hash_type = archive_hash[0]
             record.archive_hash = archive_hash[1]
+            record.tape_file_number = tape_file_number
 
         return backup_records
 

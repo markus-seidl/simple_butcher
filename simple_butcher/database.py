@@ -21,6 +21,7 @@ class BackupRecord:
     archive_hash: str
     hash_type: str
     tar_line: str
+    tape_file_number: int = -1
 
     def to_json(self):
         return json.dumps(dataclasses.asdict(self))
