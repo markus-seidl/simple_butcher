@@ -91,9 +91,10 @@ class Restore:
         max_volume_no = 0
         with open(database.database_file(), "r") as f:
             line = f.readline()
+            print(line)
             while line:
                 record = BackupRecord.from_json(json.loads(line))
-                tn, vn = record.volume_no, record.tape_no
+                tn, vn = record.tape_no, record.volume_no
 
                 if tn not in volume_map:
                     volume_map[tn] = list()
