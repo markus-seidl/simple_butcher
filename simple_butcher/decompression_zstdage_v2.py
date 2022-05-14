@@ -30,7 +30,7 @@ class DecompressionZstdAgeV2:
             raise OSError("Unsupported.")
 
         output_process = subprocess.Popen(
-            [MBUFFER, "-i", config.tape, "-l", mbuffer_log, "-q", "-m", "5G", "-s", "512k", "-o", "-"],
+            [MBUFFER, "-i", config.tape, "-l", mbuffer_log, "-q", "-s", "512k", "-o", "-"],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
 
