@@ -78,7 +78,7 @@ class Restore:
         if self.config.backup_name.isdigit():
             backup_no = int(self.config.backup_name)
             self.config.backup_name = backup_names[backup_no]
-            logging.info(f"Converting {backup_no} to {self.config.backup_name}")
+            logging.info(f"Converting index {backup_no} to name {self.config.backup_name}")
 
         backup_info = backup_repository.read_backup_info(self.config.backup_name)
         database = BackupDatabase(DB_ROOT, self.config.backup_repository, self.config.backup_name)
