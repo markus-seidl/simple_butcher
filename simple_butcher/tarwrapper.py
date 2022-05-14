@@ -85,11 +85,14 @@ class TarWrapper(Wrapper):
         return tar_output_file, tar_process, tar_thread
 
     def restore_full(self, config: RestoreConfig, communication_file: str, tar_input_file: str):
-        tar_cmd = [TAR, "xvM", "-f", tar_input_file, "--directory", config.dest]
-        tar_cmd.append("--new-volume-script")
-        tar_cmd.append(f'"python simple_butcher/archive_finalizer.py \"{communication_file}\""')
+        # tar_cmd = [TAR, "xvM", "-f", tar_input_file, "--directory", config.dest]
+        # tar_cmd.append("--new-volume-script")
+        # tar_cmd.append(f'')
 
-        tar_process = subprocess.Popen(tar_cmd)
+        tar_cmd = f"{TAR} xvM -f {tar_input_file} --directory {config.dest} " \
+                  f'--new-volume-script="python simple_butcher/archive_finalizer.py \"{communication_file}\""'
+
+        tar_process = subprocess.Popen(tar_cmd, shell=True)
         tar_thread = threading.Thread(
             target=self._wait_for_process_finish_restore,
             args=(tar_process,)
