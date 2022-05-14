@@ -90,7 +90,7 @@ class TarWrapper(Wrapper):
 
         tar_process = subprocess.Popen(tar_cmd)
         tar_thread = threading.Thread(
-            target=self._wait_for_process_finish_full_backup,
+            target=self._wait_for_process_finish_restore,
             args=(tar_process,)
         )
         tar_thread.start()
