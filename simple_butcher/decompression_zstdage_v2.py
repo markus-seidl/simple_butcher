@@ -19,7 +19,7 @@ class DecompressionZstdAgeV2:
         super().__init__()
 
     def do(self, config: RestoreConfig, archive_volume_no: ArchiveVolumeNumber) -> str:
-        output_file = config.tempdir + "/%09i.tar.zst.age" % archive_volume_no.volume_no
+        output_file = config.tempdir + "/%09i.tar" % archive_volume_no.volume_no
 
         if os.path.exists(output_file):
             os.remove(output_file)
@@ -33,12 +33,13 @@ class DecompressionZstdAgeV2:
             [MBUFFER, "-i", config.tape, "-l", mbuffer_log, "-q", "-m", "5G", "-s", "512k", "--md5"],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
+
         age_process = subprocess.Popen(
             [AGE, "-d", "-i", config.password_file], stdin=output_process.stdout, stdout=subprocess.PIPE
         )
 
         zstd_process = subprocess.Popen(
-            [ZSTD, "-d", output_file]
+            [ZSTD, "-d", "-o", output_file]
         )
 
         start_piping = time.time()
