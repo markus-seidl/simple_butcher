@@ -38,6 +38,7 @@ class Restore:
         # --> fast forward to correct position on tape
 
         tape_vol_map, max_volumes = self.count_volumes(backup_info, database)
+        logging.info(f"Restoring {max_volumes} volumes.")
         archive_volume_no = ArchiveVolumeNumber(0, 0, 0, 0)
         tar_thread = None
         tar_input_file = self.config.tempdir + "/tar_file"
