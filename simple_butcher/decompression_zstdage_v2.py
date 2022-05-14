@@ -39,7 +39,7 @@ class DecompressionZstdAgeV2:
         )
 
         zstd_process = subprocess.Popen(
-            [ZSTD, "-d", "-o", output_file]
+            [ZSTD, "-d", "-", "-o", output_file]
         )
 
         start_piping = time.time()
