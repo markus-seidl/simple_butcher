@@ -32,8 +32,7 @@ class Restore:
         self.database = None
 
     def do(self):
-        backup_repository = BackupDatabaseRepository(DB_ROOT, self.config.backup_repository)
-        backup_info, database = backup_repository.read_backup_info(self.config.backup_name)
+        backup_info, database = self.load_database()
 
         # --> advise user to load correct tape
         # --> fast forward to correct position on tape
@@ -74,10 +73,16 @@ class Restore:
 
     def load_database(self) -> (BackupInfo, BackupDatabase):
         backup_repository = BackupDatabaseRepository(DB_ROOT, self.config.backup_repository)
+        backup_names = backup_repository.list_backups()
+
+        if self.config.backup_name.isdigit():
+            backup_no = int(self.config.backup_name)
+            self.config.backup_name = backup_names[backup_no]
+            logging.info(f"Converting {backup_no} to {self.config.backup_name}")
+
         backup_info = backup_repository.read_backup_info(self.config.backup_name)
         database = BackupDatabase(DB_ROOT, self.config.backup_repository, self.config.backup_name)
         database.open()
-
         return backup_info, database
 
     def count_volumes(self, backup_info: BackupInfo, database: BackupDatabase) -> (dict, int):
