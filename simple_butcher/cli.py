@@ -4,8 +4,9 @@ import argparse
 import datetime
 import os
 
-from config import BackupConfig, ListBackupConfig
+from config import BackupConfig, RestoreConfig, ListBackupConfig
 from cmd_backup import Backup
+from cmd_restore import Restore
 from cmd_list_backups import ListBackups
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO, datefmt='%I:%M:%S')
@@ -28,10 +29,23 @@ def do():
     backup.add_argument("--chunk-size", help="Backups are written in single chunks. Size in GB", default=10, type=int)
     backup.add_argument("--incremental-time", help="If set only includes files modified in the past n days",
                         default=None, required=False, type=int)
-    backup.add_argument("--exclude", help="tar exclude option", default=None, required=False, action='append', nargs='+')
+    backup.add_argument("--exclude", help="tar exclude option", default=None, required=False, action='append',
+                        nargs='+')
 
     list_backups = subparsers.add_parser("list-backups")
     list_backups.add_argument("--backup-repository", help="Name of the backup repository", default="default")
+
+    restore = subparsers.add_parser("restore")
+    restore.add_argument("--backup-repository", help="Name of the backup repository", default="default")
+    restore.add_argument("--backup-name", help="Name of the backup to restore, or number", required=True)
+    restore.add_argument("--compression", help="only zstd_pipe is supported", default="zstd_pipe_v2")
+    restore.add_argument("--dest", help="Dest directory", required=True)
+    restore.add_argument("--password-file", help="Password in plain text as file", default="./password.key")
+    restore.add_argument("--tempdir", help="Store tar output", default="./temp")
+    restore.add_argument("--tape", help="Tape device", default="/dev/nst0")
+    restore.add_argument("--tape-dummy", help="Used for local debugging, if specified the tape isn't used.")
+    restore.add_argument("--exclude", help="tar exclude option", default=None, required=False, action='append',
+                        nargs='+')
 
     args = parser.parse_args()
 
@@ -39,8 +53,26 @@ def do():
         do_backup(args)
     elif args.command == "list-backups":
         do_list_backup(args)
+    elif args.command == 'restore':
+        do_restore(args)
     else:
         print("Command unknown.")
+
+
+def do_restore(args):
+    config = RestoreConfig(
+        backup_repository=args.backup_repository,
+        backup_name=args.backup_name,
+        compression=args.compression,
+        dest=args.dest,
+        password_file=args.password_file,
+        tempdir=args.tempdir,
+        tape=args.tape,
+        tape_dummy=args.tape_dummy,
+        excludes=args.exclude
+    )
+
+    Restore(config).do()
 
 
 def do_backup(args):
