@@ -2,6 +2,7 @@ import os
 import logging
 import shutil
 import time
+import json
 
 from config import RestoreConfig
 from common import ArchiveVolumeNumber, compression_info, file_size_format, report_performance
@@ -37,14 +38,39 @@ class Restore:
         # --> advise user to load correct tape
         # --> fast forward to correct position on tape
 
-        max_volumes = self.count_volumes(backup_info, database)
+        tape_vol_map, max_volumes = self.count_volumes(backup_info, database)
         archive_volume_no = ArchiveVolumeNumber(0, 0, 0, 0)
+        tar_thread = None
+        tar_input_file = self.config.tempdir + "/tar_file"
         while archive_volume_no.volume_no <= max_volumes:
             output_file = self.decompression_v2.do(self.config, archive_volume_no)
+            archive_volume_no.incr_volume_no()
 
-        # Yes --> mbuffer --> age --> zstd -d --> file --> tar
+            if tar_thread is None:
+                shutil.move(output_file, tar_input_file)
+                tar_thread = self.tar.restore_full(self.config, self.com.communication_file, tar_input_file)
+            else:
+                shutil.move(output_file, tar_input_file)
+
+                self.com.signal_tar_to_continue()
+
+                while tar_thread.is_alive():
+                    if self.com.wait_for_signal():
+                        time.sleep(0.1)
+
+            if self.should_change_tape(archive_volume_no, tape_vol_map):
+                input("Change tape!")
+                archive_volume_no.incr_tape_no()
 
         database.close()
+
+    def should_change_tape(self, archive_volume_no: ArchiveVolumeNumber, tape_vol_map: dict) -> bool:
+        vol_no = archive_volume_no.volume_no
+        for tn in tape_vol_map:
+            vols = tape_vol_map[tn]
+            if vol_no in vols and archive_volume_no.tape_no != tn:
+                return True
+        return False
 
     def load_database(self) -> (BackupInfo, BackupDatabase):
         backup_repository = BackupDatabaseRepository(DB_ROOT, self.config.backup_repository)
@@ -54,5 +80,22 @@ class Restore:
 
         return backup_info, database
 
-    def count_volumes(self, backup_info: BackupInfo, database: BackupDatabase) -> int:
-        return backup_info.volumes
+    def count_volumes(self, backup_info: BackupInfo, database: BackupDatabase) -> (dict, int):
+        volume_map = dict()
+        max_volume_no = 0
+        with open(database.database_file(), "r") as f:
+            line = f.readline()
+            while line:
+                record = BackupRecord.from_json(json.loads(line))
+                tn, vn = record.volume_no, record.tape_no
+
+                if tn not in volume_map:
+                    volume_map[tn] = list()
+
+                volume_map[tn].append(vn)
+                if vn > max_volume_no:
+                    max_volume_no = vn
+
+                line = f.readline()
+
+        return volume_map, max_volume_no + 1

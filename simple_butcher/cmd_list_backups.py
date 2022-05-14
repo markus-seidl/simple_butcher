@@ -14,7 +14,7 @@ class ListBackups:
     def do(self):
         table = Table(title="Backups")
         table.add_column("No")
-        table.add_column("Directory", no_wrap=True)
+        table.add_column("Name", no_wrap=True)
         table.add_column("Duration")
         table.add_column("Size")
         table.add_column("T / V")

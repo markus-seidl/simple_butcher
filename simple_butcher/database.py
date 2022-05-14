@@ -26,6 +26,17 @@ class BackupRecord:
     def to_json(self):
         return json.dumps(dataclasses.asdict(self))
 
+    @staticmethod
+    def from_json(j):
+        return BackupRecord(
+            tape_no=j['tape_no'],
+            volume_no=j['volume_no'],
+            archive_hash=j['archive_hash'],
+            hash_type=j['hash_type'],
+            tar_line=j['tar_line'],
+            tape_file_number=j['tape_file_number'] if 'tape_file_number' in j else None,
+        )
+
 
 @dataclasses.dataclass
 class BackupInfo:
