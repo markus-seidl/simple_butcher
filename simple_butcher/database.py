@@ -97,7 +97,7 @@ class BackupDatabase:
     def open(self):
         db_file = self.database_file() + ".zst"
         if os.path.exists(db_file):
-            self._decompress_file(db_file)
+            _decompress_file(db_file)
 
         # tar_file = self.tar_incremental_file() + ".zst"
         # if os.path.exists(tar_file):
@@ -132,7 +132,11 @@ class BackupDatabase:
                 f.write(record.to_json())
                 f.write(os.linesep)
 
-    def close_and_compress(self, backup_info: BackupInfo):
+    def close(self):
+        if os.path.exists(self.database_file()) and os.path.exists(self.database_file() + ".zst"):
+            os.remove(self.database_file())
+
+    def close_backup(self, backup_info: BackupInfo):
         logging.info("Closing and compressing database...")
         with open(self.info_file(), "w+") as f:
             logging.info("Writing backup information file...")

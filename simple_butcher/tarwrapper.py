@@ -7,7 +7,7 @@ import time
 from tqdm import tqdm
 
 from base_wrapper import Wrapper
-from config import BackupConfig
+from config import BackupConfig, RestoreConfig
 from common import ArchiveVolumeNumber, file_size_format
 from database import BackupRecord, BackupDatabase
 from exe_paths import TAR, FIND
@@ -83,6 +83,24 @@ class TarWrapper(Wrapper):
         tar_thread.start()
 
         return tar_output_file, tar_process, tar_thread
+
+    def restore_full(self, config: RestoreConfig, communication_file: str, tar_input_file: str):
+        tar_cmd = [TAR, "xvM", "-f", tar_input_file, "--directory", config.dest]
+        tar_cmd.append(f'--new-volume-script="python simple_butcher/archive_finalizer.py \"{communication_file}\"" ')
+
+        tar_process = subprocess.Popen(tar_cmd)
+        tar_thread = threading.Thread(
+            target=self._wait_for_process_finish_full_backup,
+            args=(tar_process,)
+        )
+        tar_thread.start()
+
+        return tar_thread
+
+    def _wait_for_process_finish_restore(self, process: subprocess.Popen):
+        _, s_err = process.communicate()
+        if process.returncode != 0:
+            raise OSError(s_err)
 
     def _build_incremental_file_list(self, config: BackupConfig, database: BackupDatabase) -> str:
         find_cmd = FIND_CMD.format(

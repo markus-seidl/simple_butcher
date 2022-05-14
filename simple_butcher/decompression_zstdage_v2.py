@@ -4,55 +4,42 @@ import subprocess
 import time
 import re
 
-from base_wrapper import Wrapper
-from config import BackupConfig
-from common import ArchiveVolumeNumber, report_performance, report_performance_bytes
-
-from config import BackupConfig
-from common import ArchiveVolumeNumber, file_size_format
+from config import RestoreConfig
+from common import ArchiveVolumeNumber, file_size_format, report_performance_bytes
 from database import BackupRecord
 from exe_paths import ZSTD, AGE, TEE, MBUFFER, SHA256SUM, MD5SUM
 from compression import Compression
 
 
-class ZstdAgeV2(Compression):
+class DecompressionZstdAgeV2:
     """
-    This class compresses, encrypts and writes to tape with zstd, age and mbuffer in a single pipe command.
-    Additionally, md5 is also computed.
     """
 
     def __init__(self):
         super().__init__()
-        self.all_bytes_read = 0
-        self.all_bytes_written = 0
 
-    def do(self, config: BackupConfig, archive_volume_no: ArchiveVolumeNumber, input_file: str) -> (str, str):
+    def do(self, config: RestoreConfig, archive_volume_no: ArchiveVolumeNumber) -> str:
         output_file = config.tempdir + "/%09i.tar.zst.age" % archive_volume_no.volume_no
-
-        original_size = os.path.getsize(input_file)
-        self.all_bytes_read += original_size
 
         if os.path.exists(output_file):
             os.remove(output_file)
 
         mbuffer_log = config.tempdir + "/mbuffer.log"
         # ---
-        zstd_process = subprocess.Popen(
-            [ZSTD, "-4", "-T0", input_file, "--stdout"], stdout=subprocess.PIPE
+        if config.tape_dummy is not None:
+            raise OSError("Unsupported.")
+
+        output_process = subprocess.Popen(
+            [MBUFFER, "-i", config.tape, "-l", mbuffer_log, "-q", "-m", "5G", "-s", "512k", "--md5"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
         age_process = subprocess.Popen(
-            [AGE, "-e", "-i", config.password_file], stdin=zstd_process.stdout, stdout=subprocess.PIPE
+            [AGE, "-d", "-i", config.password_file], stdin=output_process.stdout, stdout=subprocess.PIPE
         )
 
-        if config.tape_dummy is not None:
-            output_process = subprocess.Popen(
-                f" > {output_file}", shell=True, stdin=age_process.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            )
-        else:
-            output_process = subprocess.Popen(
-                [MBUFFER, "-P", "90", "-l", mbuffer_log, "-q", "-m", "5G", "-o", config.tape, "-s", "512k", "--md5"],
-                stdin=age_process.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            )
+        zstd_process = subprocess.Popen(
+            [ZSTD, "-d", output_file]
+        )
 
         start_piping = time.time()
         last_report_time = start_piping
@@ -62,7 +49,7 @@ class ZstdAgeV2(Compression):
 
             if time.time() - last_report_time >= 1 and bytes_written > 0:
                 last_report_time = time.time()
-                logging.info(f"C/E/xxx written {file_size_format(bytes_written)}")
+                logging.info(f"C/E/xxx read {file_size_format(bytes_written)}")
 
             time.sleep(0.1)
 
@@ -74,17 +61,9 @@ class ZstdAgeV2(Compression):
         if output_process.returncode != 0:
             raise OSError(output_stderr)
 
-        bytes_written, _ = self.parse_mbuffer_progress_log(mbuffer_log)
         logging.info("C/E/xxx done with " + report_performance_bytes(start_piping, bytes_written))
-        self.all_bytes_written += bytes_written
 
-        os.remove(input_file)
-
-        hash_out = self.parse_mbuffer_md5(mbuffer_log)
-        if hash_out is None:
-            return "None", "-"
-
-        return "md5sum", hash_out.replace(" *-", "")
+        return output_file
 
     def parse_mbuffer_progress_log(self, mbuffer_log: str) -> (int, int):
         # mbuffer: in @  164 MiB/s, out @  164 MiB/s, 3102 MiB total, buffer  99% full
@@ -155,4 +134,5 @@ class ZstdAgeV2(Compression):
 
 
 if __name__ == '__main__':
-    ZstdAgeV2().parse_mbuffer_progress_log_last_line("/mnt/scratch/mbuffer.log")
+    # ZstdAgeV2().parse_mbuffer_progress_log_last_line("/mnt/scratch/mbuffer.log")
+    pass

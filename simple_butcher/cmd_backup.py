@@ -71,7 +71,7 @@ class Backup:
 
         self.post_backup_hook()
 
-        self.database.close_and_compress(BackupInfo(
+        self.database.close_backup(BackupInfo(
             time_start=int(backup_time_start),
             time_end=int(time.time()),
             bytes_written=archive_volume_no.bytes_written,

@@ -18,5 +18,18 @@ class BackupConfig:
 
 
 @dataclass
+class RestoreConfig:
+    backup_repository: str
+    backup_name: str
+    compression: str
+    dest: str
+    password_file: str
+    tempdir: str
+    tape: str
+    tape_dummy: str
+    excludes: [str]
+
+
+@dataclass
 class ListBackupConfig:
     backup_repository: str
