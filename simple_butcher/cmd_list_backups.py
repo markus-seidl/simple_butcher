@@ -19,6 +19,7 @@ class ListBackups:
         table.add_column("Size")
         table.add_column("T / V")
         table.add_column("Type", no_wrap=True)
+        table.add_column("Description")
 
         no = 0
         all_backups = self.repository.list_backups()
@@ -37,7 +38,8 @@ class ListBackups:
                 "%.0f" % minutes,
                 file_size_format(bi.bytes_written),
                 f"{bi.tapes}/{bi.volumes}",
-                reference_backup
+                reference_backup,
+                bi.description
             )
             no += 1
 

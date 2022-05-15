@@ -4,10 +4,11 @@ import argparse
 import datetime
 import os
 
-from config import BackupConfig, RestoreConfig, ListBackupConfig
+from config import BackupConfig, RestoreConfig, ListBackupConfig, ListFilesConfig
 from cmd_backup import Backup
 from cmd_restore import Restore
 from cmd_list_backups import ListBackups
+from cmd_list_files import ListFiles
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO, datefmt='%I:%M:%S')
 
@@ -31,9 +32,14 @@ def do():
                         default=None, required=False, type=int)
     backup.add_argument("--exclude", help="tar exclude option", default=None, required=False, action='append',
                         nargs='+')
+    backup.add_argument("--description", help="Additional description for a backup", default="", type=str)
 
     list_backups = subparsers.add_parser("list-backups")
     list_backups.add_argument("--backup-repository", help="Name of the backup repository", default="default")
+
+    list_files = subparsers.add_parser("list-files")
+    list_files.add_argument("--backup-repository", help="Name of the backup repository", default="default")
+    list_files.add_argument("--backup-name", help="Name of the backup to restore, or number", required=True)
 
     restore = subparsers.add_parser("restore")
     restore.add_argument("--backup-repository", help="Name of the backup repository", default="default")
@@ -45,7 +51,7 @@ def do():
     restore.add_argument("--tape", help="Tape device", default="/dev/nst0")
     restore.add_argument("--tape-dummy", help="Used for local debugging, if specified the tape isn't used.")
     restore.add_argument("--exclude", help="tar exclude option", default=None, required=False, action='append',
-                        nargs='+')
+                         nargs='+')
 
     args = parser.parse_args()
 
@@ -53,10 +59,21 @@ def do():
         do_backup(args)
     elif args.command == "list-backups":
         do_list_backup(args)
+    elif args.command == 'list-files':
+        do_list_files(args)
     elif args.command == 'restore':
         do_restore(args)
     else:
         print("Command unknown.")
+
+
+def do_list_files(args):
+    config = ListFilesConfig(
+        backup_repository=args.backup_repository,
+        backup_name=args.backup_name
+    )
+
+    ListFiles(config).do()
 
 
 def do_restore(args):
@@ -78,6 +95,8 @@ def do_restore(args):
 def do_backup(args):
     config = BackupConfig(
         backup_repository=args.backup_repository,
+        backup_name=datetime.datetime.now().isoformat(timespec='seconds'),
+        description=args.description,
         compression=args.compression,
         source=args.source,
         password_file=args.password_file,
@@ -86,7 +105,6 @@ def do_backup(args):
         tape=args.tape,
         tape_dummy=args.tape_dummy,
         chunk_size=args.chunk_size,
-        backup_name=datetime.datetime.now().isoformat(timespec='seconds'),
         incremental_time=args.incremental_time,
         excludes=args.exclude
     )

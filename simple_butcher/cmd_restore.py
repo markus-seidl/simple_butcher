@@ -77,17 +77,7 @@ class Restore:
 
     def load_database(self) -> (BackupInfo, BackupDatabase):
         backup_repository = BackupDatabaseRepository(DB_ROOT, self.config.backup_repository)
-        backup_names = backup_repository.list_backups()
-
-        if self.config.backup_name.isdigit():
-            backup_no = int(self.config.backup_name)
-            self.config.backup_name = backup_names[backup_no]
-            logging.info(f"Converting index {backup_no} to name {self.config.backup_name}")
-
-        backup_info = backup_repository.read_backup_info(self.config.backup_name)
-        database = BackupDatabase(DB_ROOT, self.config.backup_repository, self.config.backup_name)
-        database.open()
-        return backup_info, database
+        return backup_repository.open_backup(self.config.backup_name)
 
     def count_volumes(self, backup_info: BackupInfo, database: BackupDatabase) -> (dict, int):
         volume_map = dict()

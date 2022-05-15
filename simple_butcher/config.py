@@ -4,6 +4,8 @@ from dataclasses import dataclass
 @dataclass
 class BackupConfig:
     backup_repository: str
+    backup_name: str
+    description: str
     compression: str
     source: str
     password_file: str
@@ -12,7 +14,6 @@ class BackupConfig:
     tape: str
     tape_dummy: str
     chunk_size: int  # GB
-    backup_name: str
     incremental_time: int
     excludes: [str]
 
@@ -33,3 +34,9 @@ class RestoreConfig:
 @dataclass
 class ListBackupConfig:
     backup_repository: str
+
+
+@dataclass
+class ListFilesConfig:
+    backup_repository: str
+    backup_name: str

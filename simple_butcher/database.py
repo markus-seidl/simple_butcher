@@ -48,6 +48,7 @@ class BackupInfo:
     base_backup: str
     incremental_time: int
     tape_start_index: int
+    description: str = ""
 
     def to_json(self):
         return json.dumps(dataclasses.asdict(self))
@@ -62,41 +63,9 @@ class BackupInfo:
             volumes=j['volumes'],
             base_backup=j['base_backup'] if 'base_backup' in j else None,
             tape_start_index=j['tape_start_index'] if 'tape_start_index' in j else None,
-            incremental_time=j['incremental_time'] if 'incremental_time' in j else None
+            incremental_time=j['incremental_time'] if 'incremental_time' in j else None,
+            description=j['description'] if 'description' in j else "",
         )
-
-
-class BackupDatabaseRepository:
-    def __init__(self, database_dir, backup_repository):
-        self.database_dir = database_dir
-        self.backup_repository = backup_repository
-
-    def backup_repository_dir(self) -> str:
-        return self.database_dir + "/" + self.backup_repository
-
-    def list_backups(self):
-        backups = os.listdir(self.backup_repository_dir())
-        backups.sort(reverse=True)
-
-        filtered_backups = list()
-        for dir in backups:
-            if os.path.exists(self.backup_repository_dir() + "/" + dir + "/info.json"):
-                filtered_backups.append(dir)
-
-        return filtered_backups
-
-    def read_backup_info(self, backup_dir: str) -> BackupInfo:
-        info_file = self.backup_repository_dir() + "/" + backup_dir + "/info.json"
-        with open(info_file, "r") as f:
-            return BackupInfo.from_json(json.load(f))
-
-    def copy_file(self, from_backup_name: str, to_backup_name: str, file_name: str):
-        shutil.copy(
-            self.backup_repository_dir() + f"/{from_backup_name}/{file_name}.zst",
-            self.backup_repository_dir() + f"/{to_backup_name}/{file_name}.zst"
-        )
-
-        _decompress_file(self.backup_repository_dir() + f"/{to_backup_name}/{file_name}.zst")
 
 
 class BackupDatabase:
@@ -164,6 +133,52 @@ class BackupDatabase:
             if os.path.exists(file):
                 logging.info(f"Compressing file {file}...")
                 _compress_file(file)
+
+
+class BackupDatabaseRepository:
+    def __init__(self, database_dir, backup_repository):
+        self.database_dir = database_dir
+        self.backup_repository = backup_repository
+
+    def backup_repository_dir(self) -> str:
+        return self.database_dir + "/" + self.backup_repository
+
+    def list_backups(self):
+        backups = os.listdir(self.backup_repository_dir())
+        backups.sort(reverse=True)
+
+        filtered_backups = list()
+        for dir in backups:
+            if os.path.exists(self.backup_repository_dir() + "/" + dir + "/info.json"):
+                filtered_backups.append(dir)
+
+        return filtered_backups
+
+    def read_backup_info(self, backup_dir: str) -> BackupInfo:
+        info_file = self.backup_repository_dir() + "/" + backup_dir + "/info.json"
+        with open(info_file, "r") as f:
+            return BackupInfo.from_json(json.load(f))
+
+    def copy_file(self, from_backup_name: str, to_backup_name: str, file_name: str):
+        shutil.copy(
+            self.backup_repository_dir() + f"/{from_backup_name}/{file_name}.zst",
+            self.backup_repository_dir() + f"/{to_backup_name}/{file_name}.zst"
+        )
+
+        _decompress_file(self.backup_repository_dir() + f"/{to_backup_name}/{file_name}.zst")
+
+    def open_backup(self, backup_name) -> (BackupInfo, BackupDatabase):
+        backup_names = self.list_backups()
+
+        if backup_name.isdigit():
+            backup_no = int(backup_name)
+            backup_name = backup_names[backup_no]
+            logging.info(f"Converting index {backup_no} to name {backup_name}")
+
+        backup_info = self.read_backup_info(backup_name)
+        database = BackupDatabase(DB_ROOT, self.backup_repository, backup_name)
+        database.open()
+        return backup_info, database
 
 
 def _compress_file(input_file: str):
