@@ -50,7 +50,7 @@ class ZstdAgeV2(Compression):
             )
         else:
             output_process = subprocess.Popen(
-                [MBUFFER, "-P", "90", "-l", mbuffer_log, "-q", "-m", "5G", "-o", config.tape, "-s", "512k", "--md5"],
+                [MBUFFER, "-P", "90", "-l", mbuffer_log, "-q", "-m", "5G", "-o", config.tape, "-s", "512k", "--md5", "--tapeaware"],
                 stdin=age_process.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
 
@@ -99,17 +99,17 @@ class ZstdAgeV2(Compression):
             for line in reversed(lines):
                 if "buffer" in line:
                     s = re.search(
-                        ", +(\\d+) +MiB total, buffer +(\\d+)% full", line, re.IGNORECASE
+                        ", +([\\d.]) +MiB total, buffer +([\\d.]+)% full", line, re.IGNORECASE
                     )
                     if s:
-                        bytes_written = int(s.group(1)) * 1000 * 1000
+                        bytes_written = int(float(s.group(1)) * 1000 * 1000)
                         buffer_percent = int(s.group(2))
                         return bytes_written, buffer_percent
                     s = re.search(
-                        ", +(\\d+) +GiB total, buffer +(\\d+)% full", line, re.IGNORECASE
+                        ", +([\\d.]+) +GiB total, buffer +([\\d.]+)% full", line, re.IGNORECASE
                     )
                     if s:
-                        bytes_written = int(s.group(1)) * 1000 * 1000 * 1000
+                        bytes_written = int(float(s.group(1)) * 1000 * 1000 * 1000)
                         buffer_percent = int(s.group(2))
                         return bytes_written, buffer_percent
         except:
@@ -160,4 +160,4 @@ class ZstdAgeV2(Compression):
 
 
 if __name__ == '__main__':
-    ZstdAgeV2().parse_mbuffer_progress_log_last_line("/mnt/scratch/mbuffer.log")
+    print(ZstdAgeV2().parse_mbuffer_progress_log("../mbuffer.log"))
