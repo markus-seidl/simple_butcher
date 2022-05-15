@@ -99,13 +99,18 @@ class ZstdAgeV2(Compression):
             for line in reversed(lines):
                 if "buffer" in line:
                     s = re.search(
-                        ", +(\\d+) +[MGT]iB total, buffer +(\\d+)% full", line, re.IGNORECASE
+                        ", +(\\d+) +MiB total, buffer +(\\d+)% full", line, re.IGNORECASE
                     )
                     if s:
                         bytes_written = int(s.group(1)) * 1000 * 1000
                         buffer_percent = int(s.group(2))
-                        # done_percent = int(s.group(3))
-
+                        return bytes_written, buffer_percent
+                    s = re.search(
+                        ", +(\\d+) +GiB total, buffer +(\\d+)% full", line, re.IGNORECASE
+                    )
+                    if s:
+                        bytes_written = int(s.group(1)) * 1000 * 1000 * 1000
+                        buffer_percent = int(s.group(2))
                         return bytes_written, buffer_percent
         except:
             pass
