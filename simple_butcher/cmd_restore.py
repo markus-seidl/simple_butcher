@@ -58,7 +58,7 @@ class Restore:
             logging.info("Waiting for tar to finish...")
             while tar_thread.is_alive():
                 if self.com.wait_for_signal():
-                    time.sleep(0.1)
+                    break
 
             if self.should_change_tape(archive_volume_no, tape_vol_map):
                 input("Change tape!")
