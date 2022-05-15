@@ -22,5 +22,6 @@ class ListFiles:
                 record = BackupRecord.from_json(json.loads(line))
 
                 print(record.tar_line)
+                line = f.readline()
 
         backup_database.close()
