@@ -107,4 +107,4 @@ class Restore:
 
                 line = f.readline()
 
-        return volume_map, max_volume_no + 1
+        return volume_map, max_volume_no
