@@ -26,7 +26,7 @@ class ListBackups:
         for backup_dir in all_backups:
             bi = self.repository.read_backup_info(backup_dir)
 
-            hours = "%.02fh" % ((bi.time_end - bi.time_start) / 60.0)
+            hours = "%.02fh" % ((bi.time_end - bi.time_start) / 60.0 / 60.0)
 
             reference_backup = "Full" if bi.incremental_time is None else f"Inc - {bi.incremental_time} days"
             # if bi.base_backup is not None:
