@@ -7,7 +7,7 @@ from pathlib import Path
 
 communication_file = sys.argv[1]
 
-print(f"Writing to comminication file {communication_file}")
+print(f"Writing to communication file {communication_file}")
 Path(communication_file).touch(exist_ok=False)
 
 while os.path.exists(communication_file):

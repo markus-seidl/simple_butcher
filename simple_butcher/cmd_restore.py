@@ -38,30 +38,31 @@ class Restore:
         # --> fast forward to correct position on tape
 
         tape_vol_map, max_volumes = self.count_volumes(backup_info, database)
-        logging.info(f"Restoring {max_volumes} volumes.")
+        logging.info(f"Restoring {max_volumes} volumes from {len(tape_vol_map.keys())} tapes.")
         archive_volume_no = ArchiveVolumeNumber(0, 0, 0, 0)
         tar_thread = None
         tar_input_file = self.config.tempdir + "/tar_file"
         while archive_volume_no.volume_no <= max_volumes:
             output_file = self.decompression_v2.do(self.config, archive_volume_no)
             archive_volume_no.incr_volume_no()
+            logging.info(f"Archive {archive_volume_no.volume_no} loaded from Tape.")
+
+            shutil.move(output_file, tar_input_file)
 
             if tar_thread is None:
-                shutil.move(output_file, tar_input_file)
                 tar_thread = self.tar.restore_full(self.config, self.com.communication_file, tar_input_file)
             else:
-                shutil.move(output_file, tar_input_file)
-
                 self.com.signal_tar_to_continue()
 
-                while tar_thread.is_alive():
-                    if self.com.wait_for_signal():
-                        time.sleep(0.1)
+            while tar_thread.is_alive():
+                if self.com.wait_for_signal():
+                    time.sleep(0.1)
 
             if self.should_change_tape(archive_volume_no, tape_vol_map):
                 input("Change tape!")
                 archive_volume_no.incr_tape_no()
 
+        logging.info("Restoration done.")
         database.close()
 
     def should_change_tape(self, archive_volume_no: ArchiveVolumeNumber, tape_vol_map: dict) -> bool:
@@ -91,7 +92,6 @@ class Restore:
         max_volume_no = 0
         with open(database.database_file(), "r") as f:
             line = f.readline()
-            print(line)
             while line:
                 record = BackupRecord.from_json(json.loads(line))
                 tn, vn = record.tape_no, record.volume_no
