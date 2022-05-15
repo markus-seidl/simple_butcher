@@ -52,8 +52,10 @@ class Restore:
             if tar_thread is None:
                 tar_thread = self.tar.restore_full(self.config, self.com.communication_file, tar_input_file)
             else:
+                logging.info("Signaling tar to continue...")
                 self.com.signal_tar_to_continue()
 
+            logging.info("Waiting for tar to finish...")
             while tar_thread.is_alive():
                 if self.com.wait_for_signal():
                     time.sleep(0.1)
