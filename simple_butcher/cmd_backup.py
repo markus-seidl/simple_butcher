@@ -79,7 +79,8 @@ class Backup:
             volumes=archive_volume_no.volume_no + 1,  # no vs count!
             base_backup=None,
             incremental_time=self.config.incremental_time,
-            tape_start_index=tape_start_index
+            tape_start_index=tape_start_index,
+            description=self.config.description
         ))
         logging.info("Backup process has finished.")
 
@@ -144,7 +145,7 @@ class Backup:
         )
 
         if self.config.tape_dummy:
-            archive_volume_no.bytes_written += int(tar_archive_file_size) # fake for no-tape
+            archive_volume_no.bytes_written += int(tar_archive_file_size)  # fake for no-tape
         else:
             archive_volume_no.bytes_written = self.compression_v2.all_bytes_written
 
@@ -156,7 +157,10 @@ class Backup:
         )
 
         tape_file_number, _, _ = self.mtst.current_position()
-        tar_contents = self.update_backup_records(tar_contents, final_archive_hash, tape_file_number - 1)
+        tape_volume_serial = self.tapeinfo.volume_serial()
+        tar_contents = self.update_backup_records(
+            tar_contents, final_archive_hash, tape_file_number - 1, tape_volume_serial
+        )
         self.database.store(tar_contents)
 
         archive_volume_no.incr_volume_no()
@@ -165,6 +169,7 @@ class Backup:
             self, archive_volume_no: ArchiveVolumeNumber, tar_archive_file: str,
             tar_archive_file_size: float, tar_contents
     ):
+        logging.error("This code is not maintained, there will be dragons!")
         compression_timer_start = time.time()
         final_archive = self.compression.do(
             config=self.config,
@@ -195,12 +200,14 @@ class Backup:
         archive_volume_no.incr_volume_no()
 
     def update_backup_records(
-            self, backup_records: [BackupRecord], archive_hash: (str, str), tape_file_number: int = -1
+            self, backup_records: [BackupRecord], archive_hash: (str, str),
+            tape_file_number: int = -1, tape_volume_serial: str = None
     ) -> [BackupRecord]:
         for record in backup_records:
             record.hash_type = archive_hash[0]
             record.archive_hash = archive_hash[1]
             record.tape_file_number = tape_file_number
+            record.tape_volume_serial = tape_volume_serial
 
         return backup_records
 
@@ -216,7 +223,7 @@ class Backup:
         remaining_bytes = self.tapeinfo.size_statistics().remaining_bytes
 
         # on my LTO-6 tapes I can only write until 115GB are remaining, maybe do some --tapeaware on mbuffer?
-        buffer_bytes = self.config.tape_buffer * 1000 * 1000 * 1000
+        buffer_bytes = self.config.tape_buffer * 1024 * 1024 * 1024
         return file_size_bytes + buffer_bytes < remaining_bytes
 
     # def prepare_incremental_file(self, current_backup: BackupDatabase) -> str:

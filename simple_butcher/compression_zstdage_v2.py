@@ -102,14 +102,14 @@ class ZstdAgeV2(Compression):
                         ", +([\\d.]+) +MiB total, buffer +([\\d.]+)% full", line, re.IGNORECASE
                     )
                     if s:
-                        bytes_written = int(float(s.group(1)) * 1000 * 1000)
+                        bytes_written = int(float(s.group(1)) * 1024 * 1024)
                         buffer_percent = int(s.group(2))
                         return bytes_written, buffer_percent
                     s = re.search(
                         ", +([\\d.]+) +GiB total, buffer +([\\d.]+)% full", line, re.IGNORECASE
                     )
                     if s:
-                        bytes_written = int(float(s.group(1)) * 1000 * 1000 * 1000)
+                        bytes_written = int(float(s.group(1)) * 1024 * 1024 * 1024)
                         buffer_percent = int(s.group(2))
                         return bytes_written, buffer_percent
         except:
