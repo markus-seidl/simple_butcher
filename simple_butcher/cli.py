@@ -27,7 +27,7 @@ def do():
     backup.add_argument("--tempdir", help="Store tar output", default="./temp")
     backup.add_argument("--tape", help="Tape device", default="/dev/nst0")
     backup.add_argument("--tape-dummy", help="Used for local debugging, if specified the tape isn't used.")
-    backup.add_argument("--chunk-size", help="Backups are written in single chunks. Size in GB", default=10, type=int)
+    backup.add_argument("--chunk-size", help="Backups are written in single chunks. Size in GB", default=20, type=int)
     backup.add_argument("--incremental-time", help="If set only includes files modified in the past n days",
                         default=None, required=False, type=int)
     backup.add_argument("--exclude", help="tar exclude option", default=None, required=False, action='append',

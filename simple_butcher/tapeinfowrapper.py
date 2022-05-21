@@ -52,8 +52,8 @@ class TapeinfoWrapper(Wrapper):
         if self.config.tape_dummy:
             return ""
 
-        cmd = TAPE_CMD.format(
-            cmd=TAPEINFO,
+        cmd = LOG_CMD.format(
+            cmd=SG_LOGS,
             tape=self.config.tape
         )
         tape_process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -110,4 +110,4 @@ if __name__ == '__main__':
         incremental_time=None,
         description=""
     )
-    print(TapeinfoWrapper(config).size_statistics())
+    print(TapeinfoWrapper(config).volume_serial())
