@@ -23,7 +23,7 @@ def do():
     backup.add_argument("--compression", help="only zstd_pipe is supported", default="zstd_pipe_v2")
     backup.add_argument("--source", help="Source directory", required=True)
     backup.add_argument("--password-file", help="Password in plain text as file", default="./password.age")
-    backup.add_argument("--tape-buffer", help="GBs left before changing to the next tape", default=150, type=int)
+    backup.add_argument("--tape-buffer", help="GBs left before changing to the next tape", default=10, type=int)
     backup.add_argument("--tempdir", help="Store tar output", default="./temp")
     backup.add_argument("--tape", help="Tape device", default="/dev/nst0")
     backup.add_argument("--tape-dummy", help="Used for local debugging, if specified the tape isn't used.")

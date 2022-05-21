@@ -38,7 +38,7 @@ class ZstdAgeV2(Compression):
         mbuffer_log = config.tempdir + "/mbuffer.log"
         # ---
         zstd_process = subprocess.Popen(
-            [ZSTD, "-4", "-T0", input_file, "--stdout"], stdout=subprocess.PIPE
+            [ZSTD, "-5", "-T0", input_file, "--stdout"], stdout=subprocess.PIPE
         )
         age_process = subprocess.Popen(
             [AGE, "-e", "-i", config.password_file], stdin=zstd_process.stdout, stdout=subprocess.PIPE
