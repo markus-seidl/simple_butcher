@@ -64,7 +64,7 @@ def do():
     elif args.command == 'restore':
         do_restore(args)
     else:
-        print("Command unknown.")
+        parser.print_help()
 
 
 def do_list_files(args):
