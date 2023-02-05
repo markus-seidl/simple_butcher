@@ -63,6 +63,8 @@ def do():
         do_list_files(args)
     elif args.command == 'restore':
         do_restore(args)
+    elif args.command == 'identify':
+        do_identify(args)
     else:
         parser.print_help()
 
@@ -122,6 +124,10 @@ def do_list_backup(args):
     )
 
     ListBackups(config).do()
+
+
+def do_identify(args):
+    pass
 
 
 if __name__ == '__main__':

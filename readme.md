@@ -28,10 +28,14 @@ Additionally, no "custom code" is used, `simple_butcher` only orchestrates other
 * Installation
 
 1) Download repository
-2) Install requirements: `tar`, `zstd`, `age` (>= 1.0.0), `md5sum`, `mbuffer`, `python3` (> 3.8), `mt-st`
+2) Install requirements: `tar`, `zstd`, `age` (>= 1.0.0), `md5sum`, `mbuffer`, `python3`
+   (> 3.8), `mt-st`, `tapeinfo`, `sg_logs`
     * Often you can just write the command in the shell and the system will tell you what package to install
 3) Make sure your tape drive works with `mt-st` (e.g. `mt-st -f /dev/nst0 status`)
 4) Install python requirements: `pip3 install -r requirements.txt` (pip or pip3, depending on your system)
+    * My recommendation would be to use a venv
+      environment: `python3 -m venv venv && source venv/bin/activate && pip3 install -r requirements.txt --upgrade`
+    * Venv can be activated with `source venv/bin/activate` and deactivated with `deactivate`
 5) Run `simple_butcher` with `./run.sh --help`
 
 * Why are only segments written to tape, and no stream handled by python?
@@ -52,8 +56,8 @@ In my tests at least a NVMe SSD is needed to keep up with the tape drive. LTO-6 
   open source and can be downloaded easily in the future. The following steps are needed to restore the files:
 
 1) Install the requirements: tar, zstd, age, md5sum, mbuffer (which are needed for `simple_butcher` as well)
-2) Dump the tape to a file: `dd if=/dev/nst0 of=restore_chunk.0001.zstd.age` (this is needed for every chunk on that
-   tape)
+2) Dump the tape to a file: `mbuffer -i /dev/nst0 -o restore_chunk.0001.zstd.age --tapeaware`
+   (this is needed for every chunk on that tape)
 3) Decrypt with age: `age -d -i keyfile.txt -o restore_chunk.0001.zstd.age restore_chunk.0001.zstd`
 4) Extract with zstd: `zstd -d -o restore_chunk.0001.tar restore_chunk.0001.zstd`
 5) Extract with tar: `tar xvf restore_chunk.0001.tar`
