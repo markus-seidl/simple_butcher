@@ -36,6 +36,7 @@ class Restore:
 
         # --> advise user to load correct tape
         # --> fast forward to correct position on tape
+        self.mtst.move_to_file(backup_info.first_volume_no)
 
         tape_vol_map, max_volumes = self.count_volumes(backup_info, database)
         logging.info(f"Restoring {max_volumes} volumes from {len(tape_vol_map.keys())} tapes.")

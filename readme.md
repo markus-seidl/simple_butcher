@@ -1,37 +1,65 @@
 # What is it?
 
-A simple backup for LTO tape drives which allows simpler restoring than the usual `tar -f /dev/nst0` backup method with CPU encryption and CPU compression.
+A simple backup for LTO tape drives which allows simpler restoring than the usual `tar -f /dev/nst0` backup method with
+CPU encryption and CPU compression.
 
-The simple tar backup method has the problem, that CPU compression/encryption treats the whole backup as a single file. Meaning that if a single backup spans multiple tapes, all tapes are needed for restoration.
-`simple_butcher` only needs a single tape, or a single segment for restoration (given that the file of interest is stored there of course).
+The simple tar backup method has the problem, tar (+compression/encryption) treats the whole backup as a single file.
+Meaning that if a single backup spans multiple tapes, all tapes are needed for restoration (!).
+`simple_butcher` splits the stream up in chunks which are encrypted and compressed separately and can therefore be
+restored separately as well. Only the tape/chunk is needed that contains the files that will be restored.
+The data is written to a scratch drive beforehand, which should be able to keep up with the tape drive.
 
-Additionally no "custom code" is used, `simple_butcher` only orchestrates other commands, like:
+Additionally, no "custom code" is used, `simple_butcher` only orchestrates other commands, like:
 
 * tar
-  * Used to convert the files from disk into a binary stream. Also used to cut the stream into chunks (by default 5 or 10GB)
-* 7z
-  * Used for universal encryption in AES
+    * Used to convert the files from disk into a binary stream. Also used to cut the stream into chunks
 * zstd
-  * Used for fast and good compression 
+    * Used for fast and good compression on multiple cores
 * mbfuffer
+    * Used to write to the tape via a memory buffer so the drive doesn't scrub the tape
 * age
-  * https://github.com/FiloSottile/age
-* sha256sum
+    * https://github.com/FiloSottile/age
 * md5sum
-  * A lot faster than sha256
+    * A lot faster than sha256 and should be enough to detect errors and identify chunks (zstd, age and tar have their
+      own checksums)
 
 # FAQ
 
-* Why is zstd + 7z used?
+* Installation
 
-7z has a very and non-fast compression in default mode, but a very secure encryption scheme (AES256). Zstd has a fast compression
+1) Download repository
+2) Install requirements: `tar`, `zstd`, `age` (>= 1.0.0), `md5sum`, `mbuffer`, `python3` (> 3.8), `mt-st`
+    * Often you can just write the command in the shell and the system will tell you what package to install
+3) Make sure your tape drive works with `mt-st` (e.g. `mt-st -f /dev/nst0 status`)
+4) Install python requirements: `pip3 install -r requirements.txt` (pip or pip3, depending on your system)
+5) Run `simple_butcher` with `./run.sh --help`
 
-* Why are only segments written to tape, and no stream?
+* Why are only segments written to tape, and no stream handled by python?
 
-This has multiple reasons: The first, and simple one, is, that only command line tools should be used and simple_butcher mostly acts as advanced shell script. 
-In the end there is no data handling by code, only shell commands
-The second reason is, that the tape is broken up in chunks that are individually compressed and encrypted. This means, that in case of a partial restore, only 
-the necessary chunks need to be decrypted and decompressed. Also, in case of tape failure or loss, not all tapes are needed to restore the files that are on the "good/remaining" tapes.
+This has multiple reasons: The first, and simple one, is, that only command line tools should be used and
+`simple_butcher` mostly acts as advanced shell script. In the end there is no data handling by code, only shell commands
+The second reason is, that the tape is broken up in chunks that are individually compressed and encrypted.
+This means, that in case of a partial restore, only the necessary chunks need to be decrypted and decompressed.
+Also, in case of tape failure or loss, not all tapes are needed to restore the files that are on the
+"good/remaining" tapes.
 
-Additionally only fully ready chunks are written to the tape, preventing unnecessary spin up/down of the drive. The `mbuffer` command ensures 
-a fast data delivery to the drive, if the hardware can handle it.
+Only fully ready chunks are written to the tape, preventing unnecessary spin up/down of the drive.
+The `mbuffer` command ensures a fast data delivery to the drive, if the hardware can handle it.
+In my tests at least a NVMe SSD is needed to keep up with the tape drive. LTO-6 drives can write at 160 MB/s, whereas
+
+* What if I loose the sources to `simple_butcher`?
+  That is not a problem, only the encryption key and the tape are needed to restore the files. All used tools are
+  open source and can be downloaded easily in the future. The following steps are needed to restore the files:
+
+1) Install the requirements: tar, zstd, age, md5sum, mbuffer (which are needed for `simple_butcher` as well)
+2) Dump the tape to a file: `dd if=/dev/nst0 of=restore_chunk.0001.zstd.age` (this is needed for every chunk on that
+   tape)
+3) Decrypt with age: `age -d -i keyfile.txt -o restore_chunk.0001.zstd.age restore_chunk.0001.zstd`
+4) Extract with zstd: `zstd -d -o restore_chunk.0001.tar restore_chunk.0001.zstd`
+5) Extract with tar: `tar xvf restore_chunk.0001.tar`
+6) Repeat steps 2-5 for every chunk on the tape
+
+* What is currently supported?
+
+* Full backups of a directory
+* Full restores (all files on the backup)

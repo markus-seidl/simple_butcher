@@ -39,6 +39,16 @@ class MTSTWrapper(Wrapper):
 
         return -1, -1, -1
 
+    def move_to_file(self, file_no: int):
+        if self._tape_dummy is not None:
+            return
+
+        logging.info("Rewinding tape ...")
+        self._exec(f"rewind")
+
+        logging.info(f"Moving head to the beginning of {file_no} ...")
+        self._exec(f"fsf {file_no}")
+
     def _exec(self, mtst_cmd) -> str:
         cmd = CMD.format(
             exe=MT_ST,

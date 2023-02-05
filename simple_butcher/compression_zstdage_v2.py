@@ -17,7 +17,7 @@ from compression import Compression
 
 class ZstdAgeV2(Compression):
     """
-    This class compresses, encrypts and writes to tape with zstd, age and mbuffer in a single pipe command.
+    This class compresses, encrypts and writes to tape with zstd, age and mbuffer.
     Additionally, md5 is also computed.
     """
 
@@ -46,11 +46,15 @@ class ZstdAgeV2(Compression):
 
         if config.tape_dummy is not None:
             output_process = subprocess.Popen(
-                f" > {output_file}", shell=True, stdin=age_process.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                f" > {output_file}", shell=True, stdin=age_process.stdout, stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
             )
         else:
             output_process = subprocess.Popen(
-                [MBUFFER, "-P", "90", "-l", mbuffer_log, "-q", "-m", "5G", "-o", config.tape, "-s", "512k", "--md5", "--tapeaware"],
+                [
+                    MBUFFER, "-P", "90", "-l", mbuffer_log, "-q", "-m", "5G", "-o", config.tape, "-s",
+                    "512k", "--md5", "--tapeaware"
+                ],
                 stdin=age_process.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
 

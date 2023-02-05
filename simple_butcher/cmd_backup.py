@@ -8,7 +8,6 @@ from common import ArchiveVolumeNumber, compression_info, file_size_format, repo
 from myzmq import SimpleMq
 from tarwrapper import TarWrapper
 from sha256wrapper import Sha256Wrapper
-from compression_zstdpipe import ZstdPipe
 from compression_zstdage_v2 import ZstdAgeV2
 from tapeinfowrapper import TapeinfoWrapper
 from database import BackupRecord, BackupDatabase, BackupDatabaseRepository, DB_ROOT, BackupInfo, \
@@ -25,7 +24,6 @@ class Backup:
         self.tar_output_file = None
         self.tar = TarWrapper()
         self.sha256 = Sha256Wrapper()
-        self.compression = ZstdPipe()
         self.compression_v2 = ZstdAgeV2()
         self.tapeinfo = TapeinfoWrapper(config)
         self.mbuffer = MBufferWrapper(config)
@@ -94,6 +92,7 @@ class Backup:
             self, archive_volume_no: ArchiveVolumeNumber, last_archive: bool = False
     ) -> (ArchiveVolumeNumber, bool):
         """
+        :param last_archive:
         :param archive_volume_no:
         :return: (ArchiveVolumeNumber, Tape position / backuped size)
         """
@@ -124,10 +123,12 @@ class Backup:
             self.compress_zstdage_v2(
                 archive_volume_no, tar_archive_file, tar_archive_file_size, tar_contents
             )
-        elif self.config.compression == "zstd_pipe":
-            self.compress_zstd_pipe(
-                archive_volume_no, tar_archive_file, tar_archive_file_size, tar_contents
-            )
+        else:
+            raise Exception("Unknown compression method: " + self.config.compression)
+        # elif self.config.compression == "zstd_pipe":
+        #     self.compress_zstd_pipe(
+        #         archive_volume_no, tar_archive_file, tar_archive_file_size, tar_contents
+        #     )
 
         logging.debug("Written to tape: " + str(archive_volume_no.bytes_written))
 
@@ -165,39 +166,39 @@ class Backup:
 
         archive_volume_no.incr_volume_no()
 
-    def compress_zstd_pipe(
-            self, archive_volume_no: ArchiveVolumeNumber, tar_archive_file: str,
-            tar_archive_file_size: float, tar_contents
-    ):
-        logging.error("This code is not maintained, there will be dragons!")
-        compression_timer_start = time.time()
-        final_archive = self.compression.do(
-            config=self.config,
-            archive_volume_no=archive_volume_no,
-            input_file=tar_archive_file
-        )
-        final_archive_size = os.path.getsize(final_archive)
-        self.sha256.start_calc_sum(final_archive)
-        compression_time = time.time() - compression_timer_start
-        logging.debug(
-            "Compression took: %3.1fs %s %s/s" % (
-                compression_time, compression_info(tar_archive_file_size, final_archive_size),
-                file_size_format(final_archive_size / compression_time)
-            )
-        )
-        # Determine if next tape is necessary
-        if self.config.tape_dummy:
-            archive_volume_no.bytes_written += int(final_archive_size)  # fake for no-tape
-        else:
-            archive_volume_no.bytes_written = self.tapeinfo.size_statistics().written_bytes
-
-        self.mbuffer.write(final_archive)
-
-        final_archive_sha = self.sha256.wait_for_sha_sum()
-        tar_contents = self.update_backup_records(tar_contents, final_archive_sha)
-        self.database.store(tar_contents)
-
-        archive_volume_no.incr_volume_no()
+    # def compress_zstd_pipe(
+    #         self, archive_volume_no: ArchiveVolumeNumber, tar_archive_file: str,
+    #         tar_archive_file_size: float, tar_contents
+    # ):
+    #     logging.error("This code is not maintained, there will be dragons!")
+    #     compression_timer_start = time.time()
+    #     final_archive = self.compression.do(
+    #         config=self.config,
+    #         archive_volume_no=archive_volume_no,
+    #         input_file=tar_archive_file
+    #     )
+    #     final_archive_size = os.path.getsize(final_archive)
+    #     self.sha256.start_calc_sum(final_archive)
+    #     compression_time = time.time() - compression_timer_start
+    #     logging.debug(
+    #         "Compression took: %3.1fs %s %s/s" % (
+    #             compression_time, compression_info(tar_archive_file_size, final_archive_size),
+    #             file_size_format(final_archive_size / compression_time)
+    #         )
+    #     )
+    #     # Determine if next tape is necessary
+    #     if self.config.tape_dummy:
+    #         archive_volume_no.bytes_written += int(final_archive_size)  # fake for no-tape
+    #     else:
+    #         archive_volume_no.bytes_written = self.tapeinfo.size_statistics().written_bytes
+    #
+    #     self.mbuffer.write(final_archive)
+    #
+    #     final_archive_sha = self.sha256.wait_for_sha_sum()
+    #     tar_contents = self.update_backup_records(tar_contents, final_archive_sha)
+    #     self.database.store(tar_contents)
+    #
+    #     archive_volume_no.incr_volume_no()
 
     def update_backup_records(
             self, backup_records: [BackupRecord], archive_hash: (str, str),
