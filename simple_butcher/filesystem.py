@@ -27,4 +27,4 @@ def walk(level: int, max_level: int, directory: str) -> int:
 
 
 if __name__ == '__main__':
-    print(walk(0, 5, "/Users/seidlm/"))
+    print(walk(0, -1, "/Users/augunrik/Downloads"))

@@ -15,7 +15,7 @@ Additionally, no "custom code" is used, `simple_butcher` only orchestrates other
     * Used to convert the files from disk into a binary stream. Also used to cut the stream into chunks
 * zstd
     * Used for fast and good compression on multiple cores
-* mbfuffer
+* mbuffer
     * Used to write to the tape via a memory buffer so the drive doesn't scrub the tape
 * age
     * https://github.com/FiloSottile/age
@@ -56,8 +56,8 @@ In my tests at least a NVMe SSD is needed to keep up with the tape drive. LTO-6 
   open source and can be downloaded easily in the future. The following steps are needed to restore the files:
 
 1) Install the requirements: tar, zstd, age, md5sum, mbuffer (which are needed for `simple_butcher` as well)
-2) Dump the tape to a file: `mbuffer -i /dev/nst0 -o restore_chunk.0001.zstd.age --tapeaware`
-   (this is needed for every chunk on that tape)
+2) Dump the tape to a file: `mbuffer -i /dev/nst0 -o restore_chunk.0001.zstd.age --tapeaware -s 512K`
+   (this is needed for every chunk on that tape) (-s is important, otherwise the data will be garbage!)
 3) Decrypt with age: `age -d -i keyfile.txt -o restore_chunk.0001.zstd.age restore_chunk.0001.zstd`
 4) Extract with zstd: `zstd -d -o restore_chunk.0001.tar restore_chunk.0001.zstd`
 5) Extract with tar: `tar xvf restore_chunk.0001.tar`
