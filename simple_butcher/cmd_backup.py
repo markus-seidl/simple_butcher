@@ -112,8 +112,20 @@ class Backup:
         # Determine if next tape is necessary. Since we don't know the compression ratio yet, we assume the worst.
         tape_change = False
         if not self.fit_on_tape(tar_archive_file_size):
-            logging.warning("Next archive will not fit on tape, please change it and press any key...")
-            input("Press any key")
+            tape_no_before = self.tapeinfo.volume_serial()
+            while True:
+                logging.warning("Next archive will not fit on tape, please change it and press any key...")
+                logging.warning(f"Remove tape {tape_no_before}")
+                input("Press any key")
+
+                tape_no_after = self.tapeinfo.volume_serial()
+                if tape_no_after == tape_no_before:
+                    logging.warning(
+                        f"Tape serial before {tape_no_before} matches the "
+                        f"current tape serial {tape_no_after}."
+                    )
+                else:
+                    break
 
             archive_volume_no.incr_tape_no()
             tape_change = True
