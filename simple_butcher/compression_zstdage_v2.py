@@ -13,6 +13,7 @@ from common import ArchiveVolumeNumber, file_size_format
 from database import BackupRecord
 from exe_paths import ZSTD, AGE, TEE, MBUFFER, SHA256SUM, MD5SUM
 from compression import Compression
+from progressbar import ProgressBarManager
 
 
 class ZstdAgeV2(Compression):
@@ -21,10 +22,11 @@ class ZstdAgeV2(Compression):
     Additionally, md5 is also computed.
     """
 
-    def __init__(self):
+    def __init__(self, pm: ProgressBarManager):
         super().__init__()
         self.all_bytes_read = 0
         self.all_bytes_written = 0
+        self.pm = pm
 
     def do(self, config: BackupConfig, archive_volume_no: ArchiveVolumeNumber, input_file: str) -> (str, str):
         output_file = config.tempdir + "/%09i.tar.zst.age" % archive_volume_no.volume_no
@@ -38,15 +40,20 @@ class ZstdAgeV2(Compression):
         mbuffer_log = config.tempdir + "/mbuffer.log"
         # ---
         zstd_process = subprocess.Popen(
-            [ZSTD, "-5", "-T0", input_file, "--stdout"], stdout=subprocess.PIPE
+            [ZSTD, "-5", "-T0", input_file, "--stdout"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT
         )
         age_process = subprocess.Popen(
             [AGE, "-e", "-i", config.password_file], stdin=zstd_process.stdout, stdout=subprocess.PIPE
         )
 
         if config.tape_dummy is not None:
+            # output_process = subprocess.Popen(
+            #     f" > {output_file}", shell=True, stdin=age_process.stdout, stdout=subprocess.PIPE,
+            #     stderr=subprocess.PIPE
+            # )
+            # the above method doesn't work on newer macos/python, the method below seems to be slower.
             output_process = subprocess.Popen(
-                f" > {output_file}", shell=True, stdin=age_process.stdout, stdout=subprocess.PIPE,
+                ["/bin/dd", "bs=512K", f"of={output_file}"], stdin=age_process.stdout, stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE
             )
         else:
@@ -59,15 +66,28 @@ class ZstdAgeV2(Compression):
             )
 
         start_piping = time.time()
-        last_report_time = start_piping
+        # last_report_time = start_piping
+
+        if "zstd" in self.pm.pbars:  # re-using progress bars
+            pbar = self.pm.pbars["zstd"]
+        else:
+            pbar = self.pm.create("zstd")
+
+        pbar.total = original_size
+        pbar.desc = "C/E"
+        pbar.set_postfix(archive=archive_volume_no.volume_no)
 
         while True:
-            bytes_written, _ = self.parse_mbuffer_progress_log(mbuffer_log)
+            if config.tape_dummy is not None:
+                bytes_written, _ = self.get_file_size(output_file)
+            else:
+                bytes_written, _ = self.parse_mbuffer_summary_log(mbuffer_log)
 
-            if time.time() - last_report_time >= 1 and bytes_written > 0:
-                last_report_time = time.time()
-                logging.info(f"C/E/xxx written {file_size_format(bytes_written)}")
+            # if time.time() - last_report_time >= 1 and bytes_written > 0:
+            #     last_report_time = time.time()
+            #     logging.info(f"C/E/xxx written {file_size_format(bytes_written)}")
 
+            pbar.update(bytes_written - pbar.n)
             time.sleep(0.1)
 
             if output_process.poll() is not None:
@@ -79,7 +99,7 @@ class ZstdAgeV2(Compression):
             raise OSError(output_stderr)
 
         bytes_written, _ = self.parse_mbuffer_progress_log(mbuffer_log)
-        logging.info("C/E/xxx done with " + report_performance_bytes(start_piping, bytes_written))
+        # logging.info("C/E/xxx done with " + report_performance_bytes(start_piping, bytes_written))
         self.all_bytes_written += bytes_written
 
         os.remove(input_file)
@@ -120,6 +140,15 @@ class ZstdAgeV2(Compression):
             pass
 
         return -1, -1
+
+    def get_file_size(self, file) -> (int, int):
+        """
+        Mimics the output of parse_mbuffer_progress_log
+        """
+        if os.path.exists(file):
+            return os.path.getsize(file), -1
+        else:
+            return -1, -1
 
     def parse_mbuffer_md5(self, mbuffer_log: str) -> (str):
         # MD5 hash: 289067bcd5472f102e946f8b71c7729b
@@ -164,4 +193,27 @@ class ZstdAgeV2(Compression):
 
 
 if __name__ == '__main__':
-    print(ZstdAgeV2().parse_mbuffer_progress_log("../mbuffer.log"))
+    # print(ZstdAgeV2().parse_mbuffer_progress_log("../mbuffer.log"))
+    config = BackupConfig(
+        backup_repository="",
+        backup_name="",
+        description="",
+        compression="",
+        source="",
+        password_file="../password.age",
+        tape_buffer=0,
+        tempdir="../temp/",
+        tape="",
+        tape_dummy="../temp/blah",
+        chunk_size=0,
+        incremental_time=0,
+        excludes=None
+    )
+    # config: BackupConfig, archive_volume_no: ArchiveVolumeNumber, input_file: str
+    ZstdAgeV2().do(
+        config,
+        archive_volume_no=ArchiveVolumeNumber(
+            tape_no=0, volume_no=0, block_position=0, bytes_written=0
+        ),
+        input_file="../temp_src/blah1"
+    )

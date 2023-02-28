@@ -15,16 +15,16 @@ if sys.platform == "linux":
     TEE = "/usr/bin/tee"
     MD5SUM = "/usr/bin/md5sum"
 elif sys.platform == "darwin":
-    TAR = "/usr/local/bin/gtar"
+    TAR = "/opt/homebrew/bin/gtar"
     SEVEN_Z = "/usr/local/bin/7z"
-    ZSTD = "/usr/local/bin/zstd"
+    ZSTD = "/opt/homebrew/bin/zstd"
     CRYPT_CMD = SEVEN_Z
     MBUFFER = None
     TAPEINFO = None
     SG_LOGS = None
-    SHA256SUM = "/usr/local/bin/sha256sum"
+    SHA256SUM = "/opt/homebrew/bin/sha256sum"
     FIND = "/usr/local/bin/gfind"
     MT_ST = None
-    AGE = "/usr/local/bin/age"
+    AGE = "/opt/homebrew/bin/age"
     TEE = "/usr/bin/tee"
     MD5SUM = "/usr/local/bin/md5sum"

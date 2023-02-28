@@ -11,6 +11,7 @@ from config import BackupConfig, RestoreConfig
 from common import ArchiveVolumeNumber, file_size_format
 from database import BackupRecord, BackupDatabase
 from exe_paths import TAR, FIND
+from progressbar import ProgressBarManager
 
 COMPRESS_TAR_BACKUP_FULL_CMD = \
     '{cmd} cvM {excludes} -L{chunk_size}G ' \
@@ -28,8 +29,9 @@ LIST_CMD = '{cmd} tvf {tar_file}'
 
 
 class TarWrapper(Wrapper):
-    def __init__(self):
+    def __init__(self, pm: ProgressBarManager):
         super().__init__()
+        self.pm = pm
 
     def main_backup_full(
             self, config: BackupConfig, backup_bar, communication_file: str, database: BackupDatabase
@@ -78,7 +80,7 @@ class TarWrapper(Wrapper):
 
         tar_thread = threading.Thread(
             target=self._wait_for_process_finish_full_backup,
-            args=(tar_process, backup_bar, tar_log_file, tar_output_file)
+            args=(tar_process, backup_bar, tar_log_file, tar_output_file, config.chunk_size)
         )
         tar_thread.start()
 
@@ -121,30 +123,36 @@ class TarWrapper(Wrapper):
         return database.tar_input_file_list()
 
     def _wait_for_process_finish_full_backup(
-            self, process: subprocess.Popen, backup_bar, tar_log_file: str, output_file: str
+            self, process: subprocess.Popen, backup_bar, tar_log_file: str, output_file: str,
+            chunk_size: int
     ):
-        self._update_tar_progressbar(backup_bar, process, tar_log_file, output_file)
+        self._update_tar_progressbar(backup_bar, process, tar_log_file, output_file, chunk_size)
 
         _, s_err = process.communicate()
         if process.returncode != 0:
             raise OSError(s_err)
 
-    def _update_tar_progressbar(self, backup_bar, process, tar_log_file, output_file):
+    def _update_tar_progressbar(self, backup_bar, process, tar_log_file, output_file, chunk_size: int):
         last_size = -1
-        while True:
-            if os.path.exists(output_file):
-                cur_size = os.path.getsize(output_file)
-                if last_size != cur_size:
-                    logging.info(f"tar chunk progress... {file_size_format(cur_size)}")
-                    last_size = cur_size
-            time.sleep(2)
-            # count_files = buf_count_newlines_gen(file_list)
-            # backup_bar.update(count_files - backup_bar.n)
+        with self.pm.create("tar") as pbar:
+            pbar.total = chunk_size * 1024 * 1024 * 1024  # just assume, we actually don't know GB --> B
+            pbar.desc = "tar"
+            while True:
+                if os.path.exists(output_file):
+                    cur_size = os.path.getsize(output_file)
+                    if last_size != cur_size:
+                        if cur_size >= last_size:
+                            pbar.update(cur_size - pbar.n)
+                        else:  # new file
+                            pbar.update(-pbar.n)
+                            pbar.update(cur_size)
+                        last_size = cur_size
+                time.sleep(0.1)
 
-            if process.poll() is not None:
-                break
+                if process.poll() is not None:
+                    break
 
-        # backup_bar.close()
+        self.pm.close("tar")
 
     # def update_tar_progressbar_old(self, backup_bar, process):
     #     # this either slows down tar or stalls it to a halt.

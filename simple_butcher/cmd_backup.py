@@ -14,17 +14,19 @@ from database import BackupRecord, BackupDatabase, BackupDatabaseRepository, DB_
     INCREMENTAL_INDEX_FILENAME
 from mbufferwrapper import MBufferWrapper
 from mtstwrapper import MTSTWrapper
+from progressbar import ProgressBarManager
 
 
 class Backup:
     def __init__(self, config: BackupConfig):
         self.config = config
         self.com = SimpleMq(config.tempdir + "/tar_archive_done")
+        self.pm = ProgressBarManager()
         self.com.cleanup()
         self.tar_output_file = None
-        self.tar = TarWrapper()
+        self.tar = TarWrapper(self.pm)
         self.sha256 = Sha256Wrapper()
-        self.compression_v2 = ZstdAgeV2()
+        self.compression_v2 = ZstdAgeV2(self.pm)
         self.tapeinfo = TapeinfoWrapper(config)
         self.mbuffer = MBufferWrapper(config)
         self.mtst = MTSTWrapper(config.tape, config.tape_dummy)
@@ -49,23 +51,31 @@ class Backup:
         chunk_start_time = time.time()
         archive_volume_no = ArchiveVolumeNumber(tape_no=0, volume_no=0, block_position=0, bytes_written=0)
 
-        while tar_thread.is_alive():
-            if self.com.wait_for_signal():
-                logging.info(f"Tar chunk finished for {report_performance(chunk_start_time, self.tar_output_file)}")
-                chunk_start_time = time.time()
+        with self.pm.create("tape") as tape_bar:
+            tape_bar.total = initial_tape_size.remaining_bytes
+            tape_bar.desc = "Tape"
+            tape_bar.update(1)
+            tape_bar.set_postfix(serial=self.tapeinfo.volume_serial())
 
-                archive_volume_no, tape_changed = self.handle_archive(archive_volume_no)
-                if tape_changed:
-                    logging.info(f"################ Tape Changed to {archive_volume_no.tape_no} ################")
+            while tar_thread.is_alive():
+                if self.com.wait_for_signal():
+                    archive_volume_no, tape_changed = self.handle_archive(archive_volume_no)
+                    if tape_changed:
+                        tape_bar.set_postfix(serial=self.tapeinfo.volume_serial())
+                        tape_bar.total = self.tapeinfo.size_statistics()
 
-                initial_tape_size = self.tapeinfo.size_statistics()
-                logging.info(
-                    f"Tape status {file_size_format(initial_tape_size.written_bytes)} written, "
-                    f"{file_size_format(initial_tape_size.remaining_bytes)} remaining"
-                )
+                    tape_bar.update(initial_tape_size.written_bytes - tape_bar.n)
+
+                    # initial_tape_size = self.tapeinfo.size_statistics()
+                    # logging.info(
+                    #     f"Tape status {file_size_format(initial_tape_size.written_bytes)} written, "
+                    #     f"{file_size_format(initial_tape_size.remaining_bytes)} remaining"
+                    # )
 
         if os.path.exists(self.tar_output_file):  # backup also last output file
             archive_volume_no, tape_changed = self.handle_archive(archive_volume_no, last_archive=True)
+
+        self.pm.close_all()
 
         self.post_backup_hook()
 
@@ -96,7 +106,7 @@ class Backup:
         :param archive_volume_no:
         :return: (ArchiveVolumeNumber, Tape position / backuped size)
         """
-        logging.info("Processing next chunk...")
+        # logging.info("Processing next chunk...")
 
         # Move output to new file so the tar process can be executed while compression/enc/tape writing is done
         tar_archive_file = self.config.tempdir + "/files.tar.%09i" % archive_volume_no.volume_no
@@ -142,7 +152,7 @@ class Backup:
         #         archive_volume_no, tar_archive_file, tar_archive_file_size, tar_contents
         #     )
 
-        logging.debug("Written to tape: " + str(archive_volume_no.bytes_written))
+        # logging.debug("Written to tape: " + str(archive_volume_no.bytes_written))
 
         return archive_volume_no, tape_change
 
@@ -162,12 +172,12 @@ class Backup:
         else:
             archive_volume_no.bytes_written = self.compression_v2.all_bytes_written
 
-        ratio = "%.2f" % (self.compression_v2.all_bytes_written / self.compression_v2.all_bytes_read)
-        logging.info(
-            f"Statistics "
-            f"{file_size_format(self.compression_v2.all_bytes_read)} read, "
-            f"{file_size_format(self.compression_v2.all_bytes_written)} written = {ratio} "
-        )
+        # ratio = "%.2f" % (self.compression_v2.all_bytes_written / self.compression_v2.all_bytes_read)
+        # logging.info(
+        #     f"Statistics "
+        #     f"{file_size_format(self.compression_v2.all_bytes_read)} read, "
+        #     f"{file_size_format(self.compression_v2.all_bytes_written)} written = {ratio} "
+        # )
 
         tape_file_number, _, _ = self.mtst.current_position()
         tape_volume_serial = self.tapeinfo.volume_serial()
