@@ -40,3 +40,9 @@ class ListBackupConfig:
 class ListFilesConfig:
     backup_repository: str
     backup_name: str
+
+
+@dataclass
+class IdentifyConfig:
+    tape: str
+    tape_dummy: str
