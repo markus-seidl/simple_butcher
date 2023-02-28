@@ -30,7 +30,8 @@ class ProgressBarManager:
             pass
 
     def close_all(self):
-        for k in self.pbars:
+        temp = list(self.pbars.keys())
+        for k in temp:
             self.close(k)
 
 # class ProgressBar:

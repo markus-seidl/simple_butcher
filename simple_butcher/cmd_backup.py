@@ -66,11 +66,12 @@ class Backup:
 
                     tape_bar.update(initial_tape_size.written_bytes - tape_bar.n)
 
-                    # initial_tape_size = self.tapeinfo.size_statistics()
-                    # logging.info(
-                    #     f"Tape status {file_size_format(initial_tape_size.written_bytes)} written, "
-                    #     f"{file_size_format(initial_tape_size.remaining_bytes)} remaining"
-                    # )
+                tape_bar.refresh()
+                # initial_tape_size = self.tapeinfo.size_statistics()
+                # logging.info(
+                #     f"Tape status {file_size_format(initial_tape_size.written_bytes)} written, "
+                #     f"{file_size_format(initial_tape_size.remaining_bytes)} remaining"
+                # )
 
         if os.path.exists(self.tar_output_file):  # backup also last output file
             archive_volume_no, tape_changed = self.handle_archive(archive_volume_no, last_archive=True)
