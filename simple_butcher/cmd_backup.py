@@ -50,6 +50,7 @@ class Backup:
 
         chunk_start_time = time.time()
         archive_volume_no = ArchiveVolumeNumber(tape_no=0, volume_no=0, block_position=0, bytes_written=0)
+        tape_serials = list()
 
         with self.pm.create("tape") as tape_bar:
             tape_bar.total = initial_tape_size.remaining_bytes
@@ -61,8 +62,10 @@ class Backup:
                 if self.com.wait_for_signal():
                     archive_volume_no, tape_changed = self.handle_archive(archive_volume_no)
                     if tape_changed:
-                        tape_bar.set_postfix(serial=self.tapeinfo.volume_serial())
+                        tape_serial = self.tapeinfo.volume_serial()
+                        tape_bar.set_postfix(serial=tape_serial)
                         tape_bar.total = self.tapeinfo.size_statistics()
+                        tape_serials.append(tape_serial)
 
                     tape_bar.update(initial_tape_size.written_bytes - tape_bar.n)
 
@@ -89,7 +92,8 @@ class Backup:
             base_backup=None,
             incremental_time=self.config.incremental_time,
             tape_start_index=tape_start_index,
-            description=self.config.description
+            description=self.config.description,
+            tape_serials=tape_serials
         ))
         logging.info("Backup process has finished.")
 

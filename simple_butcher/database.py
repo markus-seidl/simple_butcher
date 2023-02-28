@@ -51,6 +51,7 @@ class BackupInfo:
     incremental_time: int
     tape_start_index: int
     description: str = ""
+    tape_serials: [str] = None
 
     def to_json(self):
         return json.dumps(dataclasses.asdict(self))
@@ -67,6 +68,7 @@ class BackupInfo:
             tape_start_index=j['tape_start_index'] if 'tape_start_index' in j else None,
             incremental_time=j['incremental_time'] if 'incremental_time' in j else None,
             description=j['description'] if 'description' in j else "",
+            tape_serials=j['tape_serials'] if 'tape_serials' in j else None,
         )
 
 
