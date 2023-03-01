@@ -12,7 +12,8 @@ class ProgressBarManager:
             unit="B",
             unit_scale=True,
             unit_divisor=1024,
-            leave=False
+            leave=False,
+            miniters=1,
         )
         self.pbars[name] = ret
         return ret

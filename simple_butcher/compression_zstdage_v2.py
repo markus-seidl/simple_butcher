@@ -79,9 +79,9 @@ class ZstdAgeV2(Compression):
 
         while True:
             if config.tape_dummy is not None:
-                bytes_written, _ = self.get_file_size(output_file)
+                bytes_written = self.get_file_size(output_file)
             else:
-                bytes_written, _ = self.parse_mbuffer_summary_log(mbuffer_log)
+                bytes_written = self.parse_mbuffer_summary_log(mbuffer_log)
 
             # if time.time() - last_report_time >= 1 and bytes_written > 0:
             #     last_report_time = time.time()
@@ -146,9 +146,9 @@ class ZstdAgeV2(Compression):
         Mimics the output of parse_mbuffer_progress_log
         """
         if os.path.exists(file):
-            return os.path.getsize(file), -1
+            return os.path.getsize(file)
         else:
-            return -1, -1
+            return -1
 
     def parse_mbuffer_md5(self, mbuffer_log: str) -> (str):
         # MD5 hash: 289067bcd5472f102e946f8b71c7729b
