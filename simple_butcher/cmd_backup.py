@@ -55,7 +55,10 @@ class Backup:
         tape_serials = [tape_serial]
 
         tape_bar = self.pd.create_tape_bar(tape_capacity=tape_size.maximum_bytes).__enter__()
-        tape_bar.update(postfix=f"serial={tape_serial}, ratio={self.compression_ratio()}, tape_no=0")
+        tape_bar.update(
+            completed=tape_size.written_bytes,
+            postfix=f"serial={tape_serial}, ratio={self.compression_ratio()}, tape_no=0"
+        )
 
         while tar_thread.is_alive():
             if self.com.wait_for_signal():
