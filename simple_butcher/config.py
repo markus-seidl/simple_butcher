@@ -16,6 +16,7 @@ class BackupConfig:
     chunk_size: int  # GB
     incremental_time: int
     excludes: [str]
+    zstd_level: int = 5
 
 
 @dataclass

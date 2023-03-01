@@ -33,6 +33,7 @@ def do():
     backup.add_argument("--exclude", help="tar exclude option", default=None, required=False, action='append',
                         nargs='+')
     backup.add_argument("--description", help="Additional description for a backup", default="", type=str)
+    backup.add_argument("--zstd-level", help="Zstd Compression level", default=5, type=int)
 
     list_backups = subparsers.add_parser("list-backups")
     list_backups.add_argument("--backup-repository", help="Name of the backup repository", default="default")
@@ -108,7 +109,8 @@ def do_backup(args):
         tape_dummy=args.tape_dummy,
         chunk_size=args.chunk_size,
         incremental_time=args.incremental_time,
-        excludes=args.exclude
+        excludes=args.exclude,
+        zstd_level=args.zstd_level
     )
 
     with open(config.password_file, 'r') as f:
