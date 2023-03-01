@@ -68,11 +68,11 @@ class Backup:
                         tape_bar.task_id, total=initial_tape_size.maximum_bytes, postfix=""
                     )
 
-                tape_bar.update(
-                    completed=initial_tape_size.written_bytes,
-                    postfix=f"serial={tape_serial}, compression-ratio={self.compression_ratio()}, "
-                            f"tape_no={archive_volume_no.tape_no}"
-                )
+            tape_bar.update(
+                completed=initial_tape_size.written_bytes,
+                postfix=f"serial={tape_serial}, compression-ratio={self.compression_ratio()}, "
+                        f"tape_no={archive_volume_no.tape_no}"
+            )
 
             # initial_tape_size = self.tapeinfo.size_statistics()
             # logging.info(
