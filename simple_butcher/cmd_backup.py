@@ -48,10 +48,11 @@ class Backup:
         tape_serial = self.tapeinfo.volume_serial()
 
         self.pre_backup_hook()
+        self.handle_tape_change(is_first_tape=True)
 
         chunk_start_time = time.time()
         archive_volume_no = ArchiveVolumeNumber(tape_no=0, volume_no=0, block_position=0, bytes_written=0)
-        tape_serials = list()
+        tape_serials = [tape_serial]
 
         tape_bar = self.pd.create_tape_bar(tape_capacity=initial_tape_size.maximum_bytes,
                                            tape_serial=tape_serial).__enter__()
@@ -77,7 +78,7 @@ class Backup:
         if os.path.exists(self.tar_output_file):  # backup also last output file
             archive_volume_no, tape_changed = self.handle_archive(archive_volume_no, last_archive=True)
 
-        self.pm.close_all()
+        tape_bar.__exit__()
 
         self.post_backup_hook()
 
@@ -125,20 +126,7 @@ class Backup:
         # Determine if next tape is necessary. Since we don't know the compression ratio yet, we assume the worst.
         tape_change = False
         if not self.fit_on_tape(tar_archive_file_size):
-            tape_no_before = self.tapeinfo.volume_serial()
-            while True:
-                logging.warning("Next archive will not fit on tape, please change it and press any key...")
-                logging.warning(f"Remove tape {tape_no_before}")
-                input("Press any key")
-
-                tape_no_after = self.tapeinfo.volume_serial()
-                if tape_no_after == tape_no_before:
-                    logging.warning(
-                        f"Tape serial before {tape_no_before} matches the "
-                        f"current tape serial {tape_no_after}."
-                    )
-                else:
-                    break
+            self.handle_tape_change()
 
             archive_volume_no.incr_tape_no()
             tape_change = True
@@ -224,6 +212,25 @@ class Backup:
     #     self.database.store(tar_contents)
     #
     #     archive_volume_no.incr_volume_no()
+
+    def handle_tape_change(self, is_first_tape: bool = False):
+        if is_first_tape:
+            return
+
+        tape_no_before = self.tapeinfo.volume_serial()
+        while True:
+            logging.warning("Next archive will not fit on tape, please change it and press any key...")
+            logging.warning(f"Remove tape {tape_no_before}")
+            input("Press enter key")
+
+            tape_no_after = self.tapeinfo.volume_serial()
+            if tape_no_after == tape_no_before:
+                logging.warning(
+                    f"Tape serial before {tape_no_before} matches the "
+                    f"current tape serial {tape_no_after}."
+                )
+            else:
+                break
 
     def update_backup_records(
             self, backup_records: [BackupRecord], archive_hash: (str, str),
