@@ -14,19 +14,19 @@ from database import BackupRecord, BackupDatabase, BackupDatabaseRepository, DB_
     INCREMENTAL_INDEX_FILENAME
 from mbufferwrapper import MBufferWrapper
 from mtstwrapper import MTSTWrapper
-from progressbar import ProgressBarManager
+from progressbar import ProgressDisplay, ByteTask
 
 
 class Backup:
     def __init__(self, config: BackupConfig):
         self.config = config
         self.com = SimpleMq(config.tempdir + "/tar_archive_done")
-        self.pm = ProgressBarManager()
+        self.pd = ProgressDisplay()
         self.com.cleanup()
         self.tar_output_file = None
-        self.tar = TarWrapper(self.pm)
+        self.tar = TarWrapper(self.pd)
         self.sha256 = Sha256Wrapper()
-        self.compression_v2 = ZstdAgeV2(self.pm)
+        self.compression_v2 = ZstdAgeV2(self.pd)
         self.tapeinfo = TapeinfoWrapper(config)
         self.mbuffer = MBufferWrapper(config)
         self.mtst = MTSTWrapper(config.tape, config.tape_dummy)
@@ -45,6 +45,7 @@ class Backup:
         )
 
         initial_tape_size = self.tapeinfo.size_statistics()
+        tape_serial = self.tapeinfo.volume_serial()
 
         self.pre_backup_hook()
 
@@ -52,29 +53,26 @@ class Backup:
         archive_volume_no = ArchiveVolumeNumber(tape_no=0, volume_no=0, block_position=0, bytes_written=0)
         tape_serials = list()
 
-        with self.pm.create("tape") as tape_bar:
-            tape_bar.total = initial_tape_size.remaining_bytes
-            tape_bar.desc = "Tape"
-            tape_bar.update(1)
-            tape_bar.set_postfix(serial=self.tapeinfo.volume_serial())
+        tape_bar = self.pd.create_tape_bar(tape_capacity=initial_tape_size.maximum_bytes,
+                                           tape_serial=tape_serial).__enter__()
+        while tar_thread.is_alive():
+            if self.com.wait_for_signal():
+                archive_volume_no, tape_changed = self.handle_archive(archive_volume_no)
+                if tape_changed:
+                    tape_serial = self.tapeinfo.volume_serial()
+                    initial_tape_size = self.tapeinfo.size_statistics()
+                    tape_serials.append(tape_serial)
+                    tape_bar.__exit__()
+                    tape_bar = self.pd.create_tape_bar(tape_capacity=initial_tape_size.maximum_bytes,
+                                                       tape_serial=tape_serial).__enter__()
 
-            while tar_thread.is_alive():
-                if self.com.wait_for_signal():
-                    archive_volume_no, tape_changed = self.handle_archive(archive_volume_no)
-                    if tape_changed:
-                        tape_serial = self.tapeinfo.volume_serial()
-                        tape_bar.set_postfix(serial=tape_serial)
-                        tape_bar.total = self.tapeinfo.size_statistics()
-                        tape_serials.append(tape_serial)
+                tape_bar.update(completed=initial_tape_size.written_bytes)
 
-                    tape_bar.update(initial_tape_size.written_bytes - tape_bar.n)
-
-                tape_bar.refresh()
-                # initial_tape_size = self.tapeinfo.size_statistics()
-                # logging.info(
-                #     f"Tape status {file_size_format(initial_tape_size.written_bytes)} written, "
-                #     f"{file_size_format(initial_tape_size.remaining_bytes)} remaining"
-                # )
+            # initial_tape_size = self.tapeinfo.size_statistics()
+            # logging.info(
+            #     f"Tape status {file_size_format(initial_tape_size.written_bytes)} written, "
+            #     f"{file_size_format(initial_tape_size.remaining_bytes)} remaining"
+            # )
 
         if os.path.exists(self.tar_output_file):  # backup also last output file
             archive_volume_no, tape_changed = self.handle_archive(archive_volume_no, last_archive=True)

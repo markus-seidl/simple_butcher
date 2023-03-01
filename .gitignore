@@ -216,5 +216,5 @@ temp/
 temp_src/
 backup_db.txt
 db/
-password.key
+password.age
 password.age

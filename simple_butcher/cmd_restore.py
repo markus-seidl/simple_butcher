@@ -15,7 +15,7 @@ from database import BackupRecord, BackupDatabase, BackupDatabaseRepository, DB_
     INCREMENTAL_INDEX_FILENAME
 from mbufferwrapper import MBufferWrapper
 from mtstwrapper import MTSTWrapper
-from progressbar import ProgressBarManager
+from progressbar import ProgressDisplay, ByteTask
 
 
 class Restore:
@@ -24,8 +24,8 @@ class Restore:
         self.com = SimpleMq(config.tempdir + "/tar_archive_done")
         self.com.cleanup()
         self.tar_output_file = None
-        self.pm = ProgressBarManager()
-        self.tar = TarWrapper(self.pm)
+        self.pd = ProgressDisplay()
+        self.tar = TarWrapper(self.pd)
         self.sha256 = Sha256Wrapper()
         self.decompression_v2 = DecompressionZstdAgeV2()
         # self.tapeinfo = TapeinfoWrapper(config)

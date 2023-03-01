@@ -11,7 +11,7 @@ from config import BackupConfig, RestoreConfig
 from common import ArchiveVolumeNumber, file_size_format
 from database import BackupRecord, BackupDatabase
 from exe_paths import TAR, FIND
-from progressbar import ProgressBarManager
+from progressbar import ProgressDisplay, ByteTask
 
 COMPRESS_TAR_BACKUP_FULL_CMD = \
     '{cmd} cvM {excludes} -L{chunk_size}G ' \
@@ -29,9 +29,9 @@ LIST_CMD = '{cmd} tvf {tar_file}'
 
 
 class TarWrapper(Wrapper):
-    def __init__(self, pm: ProgressBarManager):
+    def __init__(self, pd: ProgressDisplay):
         super().__init__()
-        self.pm = pm
+        self.pd = pd
 
     def main_backup_full(
             self, config: BackupConfig, backup_bar, communication_file: str, database: BackupDatabase
@@ -134,25 +134,16 @@ class TarWrapper(Wrapper):
 
     def _update_tar_progressbar(self, backup_bar, process, tar_log_file, output_file, chunk_size: int):
         last_size = -1
-        with self.pm.create("tar") as pbar:
-            pbar.total = chunk_size * 1024 * 1024 * 1024  # just assume, we actually don't know GB --> B
-            pbar.desc = "tar"
+        chunk_size_bytes = chunk_size * 1024 * 1024 * 1024
+        with self.pd.create_byte_bar("tar", chunk_size_bytes) as p:
             while True:
                 if os.path.exists(output_file):
                     cur_size = os.path.getsize(output_file)
-                    if last_size != cur_size:
-                        if cur_size >= last_size:
-                            pbar.update(cur_size - pbar.n)
-                        else:  # new file
-                            pbar.update(-pbar.n)
-                            pbar.update(cur_size)
-                        last_size = cur_size
+                    p.update(completed=cur_size)
                 time.sleep(0.1)
 
                 if process.poll() is not None:
                     break
-
-        self.pm.close("tar")
 
     # def update_tar_progressbar_old(self, backup_bar, process):
     #     # this either slows down tar or stalls it to a halt.

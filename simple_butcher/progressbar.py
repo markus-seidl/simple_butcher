@@ -1,4 +1,7 @@
+import typing
 from tqdm import tqdm
+from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn, TimeRemainingColumn, \
+    TextColumn, BarColumn, TaskProgressColumn, FileSizeColumn, TotalFileSizeColumn, TaskID, TransferSpeedColumn
 
 
 class ProgressBarManager:
@@ -35,14 +38,63 @@ class ProgressBarManager:
         for k in temp:
             self.close(k)
 
-# class ProgressBar:
-#     def __init__(self, manager: "ProgressBarManager", t: tqdm):
-#         self.manager = manager
-#         self.t = t
-#
-#     def __enter__(self):
-#         self.t.__enter__()
-#         return self
-#
-#     def __exit__(self, exc_type, exc_val, exc_tb):
-#         self.t.__exit__(exc_type, exc_val, exc_tb)
+
+class ProgressDisplay:
+    def __init__(self):
+        self.progress = Progress(
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            FileSizeColumn(),
+            TextColumn("/"),
+            TotalFileSizeColumn(),
+            TransferSpeedColumn(),
+            TextColumn("{task.fields[postfix]}"),
+        )
+        self.progress.start()
+
+    def create_byte_bar(self, name, total_bytes: int, postfix: str = "") -> "ByteTask":
+        ret = self.progress.add_task(
+            name, total=total_bytes, postfix=postfix
+        )
+
+        return ByteTask(self, ret)
+
+    def create_tape_bar(self, tape_capacity: int, tape_serial: str) -> "ByteTask":
+        return ByteTask(self, self.progress.add_task(
+            "tape", total=tape_capacity, postfix=f"serial={tape_serial}"
+        ))
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.progress.__exit__(exc_type, exc_val, exc_tb)
+
+
+class ByteTask:
+    def __init__(self, parent: ProgressDisplay, task_id: TaskID):
+        self.parent = parent
+        self.task_id = task_id
+
+    def update(
+            self,
+            total: typing.Optional[float] = None,
+            completed: typing.Optional[float] = None,
+            advance: typing.Optional[float] = None,
+            description: typing.Optional[str] = None,
+            visible: typing.Optional[bool] = None,
+            refresh: bool = False,
+            **fields: typing.Any,
+    ):
+        self.parent.progress.update(
+            self.task_id, total=total, completed=completed, advance=advance, description=description,
+            visible=visible, refresh=refresh, **fields
+        )
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type=None, exc_val=None, exc_tb=None):
+        self.parent.progress.update(self.task_id, visible=False)
+        self.parent.progress.stop_task(self.task_id)

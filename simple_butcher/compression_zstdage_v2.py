@@ -13,7 +13,7 @@ from common import ArchiveVolumeNumber, file_size_format
 from database import BackupRecord
 from exe_paths import ZSTD, AGE, TEE, MBUFFER, SHA256SUM, MD5SUM
 from compression import Compression
-from progressbar import ProgressBarManager
+from progressbar import ProgressDisplay, ByteTask
 
 
 class ZstdAgeV2(Compression):
@@ -22,11 +22,11 @@ class ZstdAgeV2(Compression):
     Additionally, md5 is also computed.
     """
 
-    def __init__(self, pm: ProgressBarManager):
+    def __init__(self, pd: ProgressDisplay):
         super().__init__()
         self.all_bytes_read = 0
         self.all_bytes_written = 0
-        self.pm = pm
+        self.pd = pd
 
     def do(self, config: BackupConfig, archive_volume_no: ArchiveVolumeNumber, input_file: str) -> (str, str):
         output_file = config.tempdir + "/%09i.tar.zst.age" % archive_volume_no.volume_no
@@ -66,32 +66,21 @@ class ZstdAgeV2(Compression):
             )
 
         start_piping = time.time()
-        # last_report_time = start_piping
 
-        if "zstd" in self.pm.pbars:  # re-using progress bars
-            pbar = self.pm.pbars["zstd"]
-        else:
-            pbar = self.pm.create("zstd")
+        with self.pd.create_byte_bar(
+                "C/E", total_bytes=original_size, postfix=f"archive_no={archive_volume_no.volume_no}"
+        ) as p:
+            while True:
+                if config.tape_dummy is not None:
+                    bytes_written = self.get_file_size(output_file)
+                else:
+                    bytes_written = self.parse_mbuffer_summary_log(mbuffer_log)
 
-        pbar.total = original_size
-        pbar.desc = "C/E"
-        pbar.set_postfix(archive=archive_volume_no.volume_no)
+                p.update(completed=bytes_written)
+                time.sleep(0.1)
 
-        while True:
-            if config.tape_dummy is not None:
-                bytes_written = self.get_file_size(output_file)
-            else:
-                bytes_written = self.parse_mbuffer_summary_log(mbuffer_log)
-
-            # if time.time() - last_report_time >= 1 and bytes_written > 0:
-            #     last_report_time = time.time()
-            #     logging.info(f"C/E/xxx written {file_size_format(bytes_written)}")
-
-            pbar.update(bytes_written - pbar.n)
-            time.sleep(0.1)
-
-            if output_process.poll() is not None:
-                break
+                if output_process.poll() is not None:
+                    break
 
         output_stdout, output_stderr = output_process.communicate()
 
