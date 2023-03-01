@@ -70,7 +70,7 @@ class Backup:
 
                 tape_bar.update(
                     completed=initial_tape_size.written_bytes,
-                    postfix=f"serial={tape_serial}, ratio={self.compression_ratio()}"
+                    postfix=f"serial={tape_serial}, compression-ratio={self.compression_ratio()}"
                 )
 
             # initial_tape_size = self.tapeinfo.size_statistics()

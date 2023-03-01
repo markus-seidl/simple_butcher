@@ -49,6 +49,7 @@ class ProgressDisplay:
             TextColumn("/"),
             TotalFileSizeColumn(),
             TransferSpeedColumn(),
+            TimeRemainingColumn(compact=True),
             TextColumn("{task.fields[postfix]}"),
         )
         self.progress.start()
