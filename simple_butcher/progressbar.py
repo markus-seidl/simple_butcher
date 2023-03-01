@@ -60,9 +60,9 @@ class ProgressDisplay:
 
         return ByteTask(self, ret)
 
-    def create_tape_bar(self, tape_capacity: int, tape_serial: str) -> "ByteTask":
+    def create_tape_bar(self, tape_capacity: int) -> "ByteTask":
         return ByteTask(self, self.progress.add_task(
-            "tape", total=tape_capacity, postfix=f"serial={tape_serial}"
+            "tape", total=tape_capacity, postfix="-"
         ))
 
     def __enter__(self):

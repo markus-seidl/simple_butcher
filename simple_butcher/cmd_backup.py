@@ -54,8 +54,9 @@ class Backup:
         archive_volume_no = ArchiveVolumeNumber(tape_no=0, volume_no=0, block_position=0, bytes_written=0)
         tape_serials = [tape_serial]
 
-        tape_bar = self.pd.create_tape_bar(tape_capacity=initial_tape_size.maximum_bytes,
-                                           tape_serial=tape_serial).__enter__()
+        tape_bar = self.pd.create_tape_bar(tape_capacity=initial_tape_size.maximum_bytes).__enter__()
+        tape_bar.update(postfix=f"serial={tape_serial}, ratio={self.compression_ratio()}")
+
         while tar_thread.is_alive():
             if self.com.wait_for_signal():
                 archive_volume_no, tape_changed = self.handle_archive(archive_volume_no)
@@ -63,11 +64,14 @@ class Backup:
                     tape_serial = self.tapeinfo.volume_serial()
                     initial_tape_size = self.tapeinfo.size_statistics()
                     tape_serials.append(tape_serial)
-                    tape_bar.__exit__()
-                    tape_bar = self.pd.create_tape_bar(tape_capacity=initial_tape_size.maximum_bytes,
-                                                       tape_serial=tape_serial).__enter__()
+                    self.pd.progress.reset(
+                        tape_bar.task_id, total=initial_tape_size.maximum_bytes, postfix=""
+                    )
 
-                tape_bar.update(completed=initial_tape_size.written_bytes)
+                tape_bar.update(
+                    completed=initial_tape_size.written_bytes,
+                    postfix=f"serial={tape_serial}, ratio={self.compression_ratio()}"
+                )
 
             # initial_tape_size = self.tapeinfo.size_statistics()
             # logging.info(
@@ -101,6 +105,11 @@ class Backup:
 
     def post_backup_hook(self):
         pass
+
+    def compression_ratio(self):
+        if self.compression_v2.all_bytes_read <= 1:
+            return "-"
+        return "%.2f" % (self.compression_v2.all_bytes_written / self.compression_v2.all_bytes_read)
 
     def handle_archive(
             self, archive_volume_no: ArchiveVolumeNumber, last_archive: bool = False

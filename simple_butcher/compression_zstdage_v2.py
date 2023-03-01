@@ -40,7 +40,8 @@ class ZstdAgeV2(Compression):
         mbuffer_log = config.tempdir + "/mbuffer.log"
         # ---
         zstd_process = subprocess.Popen(
-            [ZSTD, f"-{config.zstd_level}", "-T0", input_file, "--stdout"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            [ZSTD, f"-{config.zstd_level}", "-T0", input_file, "--stdout"], stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT
         )
         age_process = subprocess.Popen(
             [AGE, "-e", "-i", config.password_file], stdin=zstd_process.stdout, stdout=subprocess.PIPE
@@ -171,6 +172,7 @@ class ZstdAgeV2(Compression):
                 )
                 if s:
                     bytes_written = int(s.group(1)) * 1000 * 1000
+                    print("bytes written: ", bytes_written)
                     return bytes_written
         except:
             pass
