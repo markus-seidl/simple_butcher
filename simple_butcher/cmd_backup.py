@@ -44,7 +44,7 @@ class Backup:
             self.config, None, self.com.communication_file, self.database
         )
 
-        initial_tape_size = self.tapeinfo.size_statistics()
+        tape_size = self.tapeinfo.size_statistics()
         tape_serial = self.tapeinfo.volume_serial()
 
         self.pre_backup_hook()
@@ -54,7 +54,7 @@ class Backup:
         archive_volume_no = ArchiveVolumeNumber(tape_no=0, volume_no=0, block_position=0, bytes_written=0)
         tape_serials = [tape_serial]
 
-        tape_bar = self.pd.create_tape_bar(tape_capacity=initial_tape_size.maximum_bytes).__enter__()
+        tape_bar = self.pd.create_tape_bar(tape_capacity=tape_size.maximum_bytes).__enter__()
         tape_bar.update(postfix=f"serial={tape_serial}, ratio={self.compression_ratio()}, tape_no=0")
 
         while tar_thread.is_alive():
@@ -62,22 +62,23 @@ class Backup:
                 archive_volume_no, tape_changed = self.handle_archive(archive_volume_no)
                 if tape_changed:
                     tape_serial = self.tapeinfo.volume_serial()
-                    initial_tape_size = self.tapeinfo.size_statistics()
+                    tape_size = self.tapeinfo.size_statistics()
                     tape_serials.append(tape_serial)
                     self.pd.progress.reset(
-                        tape_bar.task_id, total=initial_tape_size.maximum_bytes, postfix=""
+                        tape_bar.task_id, total=tape_size.maximum_bytes, postfix=""
                     )
 
-            tape_bar.update(
-                completed=initial_tape_size.written_bytes,
-                postfix=f"serial={tape_serial}, compression-ratio={self.compression_ratio()}, "
-                        f"tape_no={archive_volume_no.tape_no}"
-            )
+                tape_size = self.tapeinfo.size_statistics()
+                tape_bar.update(
+                    completed=tape_size.written_bytes,
+                    postfix=f"serial={tape_serial}, compression-ratio={self.compression_ratio()}, "
+                            f"tape_no={archive_volume_no.tape_no}"
+                )
 
-            # initial_tape_size = self.tapeinfo.size_statistics()
+            # tape_size = self.tapeinfo.size_statistics()
             # logging.info(
-            #     f"Tape status {file_size_format(initial_tape_size.written_bytes)} written, "
-            #     f"{file_size_format(initial_tape_size.remaining_bytes)} remaining"
+            #     f"Tape status {file_size_format(tape_size.written_bytes)} written, "
+            #     f"{file_size_format(tape_size.remaining_bytes)} remaining"
             # )
 
         if os.path.exists(self.tar_output_file):  # backup also last output file
