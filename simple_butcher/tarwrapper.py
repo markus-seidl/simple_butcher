@@ -139,7 +139,10 @@ class TarWrapper(Wrapper):
             while True:
                 if os.path.exists(output_file):
                     cur_size = os.path.getsize(output_file)
+                    if last_size < cur_size:
+                        self.pd.progress.reset(p.task_id, total=chunk_size_bytes)
                     p.update(completed=cur_size)
+                    last_size = cur_size
                 time.sleep(0.1)
 
                 if process.poll() is not None:
