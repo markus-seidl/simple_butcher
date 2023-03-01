@@ -75,7 +75,7 @@ class ZstdAgeV2(Compression):
                 if config.tape_dummy is not None:
                     bytes_written, _ = self.get_file_size(output_file)
                 else:
-                    bytes_written, _ = self.parse_mbuffer_summary_log(mbuffer_log)
+                    bytes_written, _ = self.parse_mbuffer_progress_log(mbuffer_log)
 
                 p.update(completed=bytes_written)
                 time.sleep(0.1)
@@ -154,57 +154,56 @@ class ZstdAgeV2(Compression):
 
         return None
 
-    def parse_mbuffer_summary_log(self, mbuffer_log: str) -> int:
-        # mbuffer: in @  164 MiB/s, out @  164 MiB/s, 3102 MiB total, buffer  99% full
-        # summary: 5119 MiByte in 37.0sec - average of  138 MiB/s
-        try:
-            with open(mbuffer_log, "r") as f:
-                temp = f.readlines()
-
-            if len(temp) <= 0:
-                return -1
-
-            last_line = temp[-1]
-
-            if "summary" in last_line:
-                s = re.search(
-                    "summary: +(\\d+) +MiByte in", last_line, re.IGNORECASE
-                )
-                if s:
-                    bytes_written = int(s.group(1)) * 1000 * 1000
-                    print("bytes written: ", bytes_written)
-                    return bytes_written
-        except:
-            pass
-
-        return -1
+    # def parse_mbuffer_summary_log(self, mbuffer_log: str) -> (int, int):
+    #     # mbuffer: in @  164 MiB/s, out @  164 MiB/s, 3102 MiB total, buffer  99% full
+    #     # summary: 5119 MiByte in 37.0sec - average of  138 MiB/s
+    #     try:
+    #         with open(mbuffer_log, "r") as f:
+    #             temp = f.readlines()
+    #
+    #         if len(temp) <= 0:
+    #             return -1, -1
+    #
+    #         last_line = temp[-1]
+    #
+    #         if "summary" in last_line:
+    #             s = re.search(
+    #                 "summary: +(\\d+) +MiByte in", last_line, re.IGNORECASE
+    #             )
+    #             if s:
+    #                 bytes_written = int(s.group(1)) * 1000 * 1000
+    #                 return bytes_written, -1
+    #     except:
+    #         pass
+    #
+    #     return -1, -1
 
     def overall_compression_ratio(self) -> float:
         return self.all_bytes_read / float(self.all_bytes_written)
 
 
 if __name__ == '__main__':
-    # print(ZstdAgeV2().parse_mbuffer_progress_log("../mbuffer.log"))
-    config = BackupConfig(
-        backup_repository="",
-        backup_name="",
-        description="",
-        compression="",
-        source="",
-        password_file="../password.age",
-        tape_buffer=0,
-        tempdir="../temp/",
-        tape="",
-        tape_dummy="../temp/blah",
-        chunk_size=0,
-        incremental_time=0,
-        excludes=None
-    )
-    # config: BackupConfig, archive_volume_no: ArchiveVolumeNumber, input_file: str
-    ZstdAgeV2().do(
-        config,
-        archive_volume_no=ArchiveVolumeNumber(
-            tape_no=0, volume_no=0, block_position=0, bytes_written=0
-        ),
-        input_file="../temp_src/blah1"
-    )
+    print(ZstdAgeV2(None).parse_mbuffer_summary_log("../mbuffer.log"))
+    # config = BackupConfig(
+    #     backup_repository="",
+    #     backup_name="",
+    #     description="",
+    #     compression="",
+    #     source="",
+    #     password_file="../password.age",
+    #     tape_buffer=0,
+    #     tempdir="../temp/",
+    #     tape="",
+    #     tape_dummy="../temp/blah",
+    #     chunk_size=0,
+    #     incremental_time=0,
+    #     excludes=None
+    # )
+    # # config: BackupConfig, archive_volume_no: ArchiveVolumeNumber, input_file: str
+    # ZstdAgeV2().do(
+    #     config,
+    #     archive_volume_no=ArchiveVolumeNumber(
+    #         tape_no=0, volume_no=0, block_position=0, bytes_written=0
+    #     ),
+    #     input_file="../temp_src/blah1"
+    # )
