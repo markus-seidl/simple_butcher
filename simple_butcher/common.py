@@ -13,7 +13,7 @@ def file_size_format(size):
 
 
 def tape_performance(tape_start_time, tape_size) -> str:
-    remaining_seconds = tape_size.remaining_bytes * (tape_size.written_bytes / (time.time() - tape_start_time))
+    remaining_seconds = tape_size.remaining_bytes / (tape_size.written_bytes / (time.time() - tape_start_time))
     if remaining_seconds < 60 * 60 * 24:  # 1d
         remaining = timedelta(seconds=remaining_seconds)
         return "remaining=" + str(remaining)
