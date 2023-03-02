@@ -14,8 +14,11 @@ def file_size_format(size):
 
 def tape_performance(tape_start_time, tape_size) -> str:
     remaining_seconds = tape_size.remaining_bytes * (tape_size.written_bytes / (time.time() - tape_start_time))
-    remaining = timedelta(seconds=remaining_seconds)
-    return "remaining=" + str(remaining)
+    if remaining_seconds < 60 * 60 * 24:  # 1d
+        remaining = timedelta(seconds=remaining_seconds)
+        return "remaining=" + str(remaining)
+    else:
+        return "remaining>1d"
 
 
 def compression_info(im_file_size, output_file_size):
