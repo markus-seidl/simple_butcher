@@ -1,6 +1,7 @@
 import time
 import os
 from dataclasses import dataclass
+from datetime import timedelta
 
 
 def file_size_format(size):
@@ -9,6 +10,12 @@ def file_size_format(size):
         return "%03.2f MB" % size
     size = size / 1024.0
     return "%03.2f GB" % size
+
+
+def tape_performance(tape_start_time, tape_size) -> str:
+    remaining_seconds = tape_size.remaining_bytes * (tape_size.written_bytes / (time.time() - tape_start_time))
+    remaining = timedelta(seconds=remaining_seconds)
+    return "remaining=" + str(remaining)
 
 
 def compression_info(im_file_size, output_file_size):

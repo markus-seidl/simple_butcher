@@ -4,7 +4,7 @@ import shutil
 import time
 
 from config import BackupConfig
-from common import ArchiveVolumeNumber, compression_info, file_size_format, report_performance, get_safe_file_size
+from common import ArchiveVolumeNumber, tape_performance, get_safe_file_size
 from myzmq import SimpleMq
 from tarwrapper import TarWrapper
 from sha256wrapper import Sha256Wrapper
@@ -50,20 +50,21 @@ class Backup:
         self.pre_backup_hook()
         self.handle_tape_change(is_first_tape=True)
 
-        chunk_start_time = time.time()
+        tape_start_time = time.time()
         archive_volume_no = ArchiveVolumeNumber(tape_no=0, volume_no=0, block_position=0, bytes_written=0)
         tape_serials = [tape_serial]
 
         tape_bar = self.pd.create_tape_bar(tape_capacity=tape_size.maximum_bytes).__enter__()
         tape_bar.update(
             completed=tape_size.written_bytes,
-            postfix=f"serial={tape_serial}, ratio={self.compression_ratio()}, tape_no=0"
+            postfix=f"serial={tape_serial}, compression-ratio={self.compression_ratio()}, tape_no=0"
         )
 
         while tar_thread.is_alive():
             if self.com.wait_for_signal():
                 archive_volume_no, tape_changed = self.handle_archive(archive_volume_no)
                 if tape_changed:
+                    tape_start_time = time.time()
                     tape_serial = self.tapeinfo.volume_serial()
                     tape_size = self.tapeinfo.size_statistics()
                     tape_serials.append(tape_serial)
@@ -72,17 +73,12 @@ class Backup:
                     )
 
                 tape_size = self.tapeinfo.size_statistics()
+                tape_perf_str = tape_performance(tape_start_time, tape_size)
                 tape_bar.update(
                     completed=tape_size.written_bytes,
                     postfix=f"serial={tape_serial}, compression-ratio={self.compression_ratio()}, "
-                            f"tape_no={archive_volume_no.tape_no}"
+                            f"tape_no={archive_volume_no.tape_no}, {tape_perf_str}"
                 )
-
-            # tape_size = self.tapeinfo.size_statistics()
-            # logging.info(
-            #     f"Tape status {file_size_format(tape_size.written_bytes)} written, "
-            #     f"{file_size_format(tape_size.remaining_bytes)} remaining"
-            # )
 
         if os.path.exists(self.tar_output_file):  # backup also last output file
             archive_volume_no, tape_changed = self.handle_archive(archive_volume_no, last_archive=True)
