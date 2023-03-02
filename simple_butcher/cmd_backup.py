@@ -4,7 +4,7 @@ import shutil
 import time
 
 from config import BackupConfig
-from common import ArchiveVolumeNumber, compression_info, file_size_format, report_performance
+from common import ArchiveVolumeNumber, compression_info, file_size_format, report_performance, get_safe_file_size
 from myzmq import SimpleMq
 from tarwrapper import TarWrapper
 from sha256wrapper import Sha256Wrapper
@@ -129,7 +129,7 @@ class Backup:
         # Move output to new file so the tar process can be executed while compression/enc/tape writing is done
         tar_archive_file = self.config.tempdir + "/files.tar.%09i" % archive_volume_no.volume_no
         shutil.move(self.tar_output_file, tar_archive_file)
-        tar_archive_file_size = os.path.getsize(tar_archive_file)
+        tar_archive_file_size = get_safe_file_size(tar_archive_file)
 
         # Unleash the TAR process to prepare the next file
         if self.com and not last_archive:  # can't signal on last archive, as there is no one listening
@@ -204,7 +204,7 @@ class Backup:
     #         archive_volume_no=archive_volume_no,
     #         input_file=tar_archive_file
     #     )
-    #     final_archive_size = os.path.getsize(final_archive)
+    #     final_archive_size = get_safe_file_size(final_archive)
     #     self.sha256.start_calc_sum(final_archive)
     #     compression_time = time.time() - compression_timer_start
     #     logging.debug(

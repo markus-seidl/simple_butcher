@@ -19,7 +19,7 @@ def compression_info(im_file_size, output_file_size):
 
 
 def report_performance(start_time: float, file: str):
-    file_size = os.path.getsize(file)
+    file_size = get_safe_file_size(file)
     end_time = time.time()
     elapsed_time = end_time - start_time
     elapsed_time_str = "%.0f" % elapsed_time
@@ -34,6 +34,12 @@ def report_performance_bytes(start_time: float, bytes: int) -> str:
     elapsed_time_str = "%.0f" % elapsed_time
     performance = file_size / elapsed_time
     return f"{file_size_format(file_size)} in {elapsed_time_str}s = {file_size_format(performance)}/s"
+
+
+def get_safe_file_size(filename: str) -> int:
+    if os.path.exists(filename):
+        return os.path.getsize(filename)
+    return 0
 
 
 @dataclass

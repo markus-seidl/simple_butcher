@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from base_wrapper import Wrapper
 from config import BackupConfig, RestoreConfig
-from common import ArchiveVolumeNumber, file_size_format
+from common import ArchiveVolumeNumber, file_size_format, get_safe_file_size
 from database import BackupRecord, BackupDatabase
 from exe_paths import TAR, FIND
 from progressbar import ProgressDisplay, ByteTask
@@ -138,7 +138,7 @@ class TarWrapper(Wrapper):
         with self.pd.create_byte_bar("tar", chunk_size_bytes) as p:
             while True:
                 if os.path.exists(output_file):
-                    cur_size = os.path.getsize(output_file)
+                    cur_size = get_safe_file_size(output_file)
                     if last_size > cur_size:
                         self.pd.progress.reset(p.task_id, total=chunk_size_bytes)
                     p.update(completed=cur_size)

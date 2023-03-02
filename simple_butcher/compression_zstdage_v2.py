@@ -9,7 +9,7 @@ from config import BackupConfig
 from common import ArchiveVolumeNumber, report_performance, report_performance_bytes
 
 from config import BackupConfig
-from common import ArchiveVolumeNumber, file_size_format
+from common import ArchiveVolumeNumber, file_size_format, get_safe_file_size
 from database import BackupRecord
 from exe_paths import ZSTD, AGE, TEE, MBUFFER, SHA256SUM, MD5SUM
 from compression import Compression
@@ -31,7 +31,7 @@ class ZstdAgeV2(Compression):
     def do(self, config: BackupConfig, archive_volume_no: ArchiveVolumeNumber, input_file: str) -> (str, str):
         output_file = config.tempdir + "/%09i.tar.zst.age" % archive_volume_no.volume_no
 
-        original_size = os.path.getsize(input_file)
+        original_size = get_safe_file_size(input_file)
         self.all_bytes_read += original_size
 
         if os.path.exists(output_file):
@@ -135,10 +135,7 @@ class ZstdAgeV2(Compression):
         """
         Mimics the output of parse_mbuffer_progress_log
         """
-        if os.path.exists(file):
-            return os.path.getsize(file), -1
-        else:
-            return -1, -1
+        return get_safe_file_size(file), -1
 
     def parse_mbuffer_md5(self, mbuffer_log: str) -> (str):
         # MD5 hash: 289067bcd5472f102e946f8b71c7729b
