@@ -33,6 +33,10 @@ class ListBackups:
             # if bi.base_backup is not None:
             #     reference_backup = f"{bi.base_backup} ({self._find_no(all_backups, bi.base_backup)})"
 
+            tape_serials = "-"
+            if bi.tape_serials is not None and len(bi.tape_serials) > 0:
+                tape_serials = ", ".join(bi.tape_serials)
+
             table.add_row(
                 f"{no}",
                 backup_dir,
@@ -41,7 +45,7 @@ class ListBackups:
                 f"{bi.tapes}/{bi.volumes}",
                 reference_backup,
                 bi.description,
-                ", ".join(bi.tape_serials)
+                tape_serials
             )
             no += 1
 
