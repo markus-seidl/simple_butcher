@@ -130,7 +130,7 @@ class TarWrapper(Wrapper):
 
         _, s_err = process.communicate()
         if process.returncode != 0:
-            raise OSError(s_err)
+            raise OSError("Error might be an artefact if files changed while reading, check tar.log: " + s_err)
 
     def _update_tar_progressbar(self, backup_bar, process, tar_log_file, output_file, chunk_size: int):
         last_size = -1

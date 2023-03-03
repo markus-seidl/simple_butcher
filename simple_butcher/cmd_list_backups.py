@@ -41,7 +41,7 @@ class ListBackups:
                 f"{bi.tapes}/{bi.volumes}",
                 reference_backup,
                 bi.description,
-                bi.tape_serials
+                ", ".join(bi.tape_serials)
             )
             no += 1
 
