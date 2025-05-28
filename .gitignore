@@ -217,4 +217,9 @@ temp_src/
 backup_db.txt
 db/
 password.age
-password.age
+
+full-backup-kang.sh
+nohup.out
+password.key
+restore.sh
+
