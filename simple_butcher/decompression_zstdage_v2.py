@@ -35,11 +35,16 @@ class DecompressionZstdAgeV2:
             stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
 
-        age_process = subprocess.Popen(
-            [AGE, "-d", "-i", config.password_file], stdin=output_process.stdout, stdout=subprocess.PIPE
-        )
+        if self.test_mode: # we need the zstd file, as zstd -t doesn't support stdin for testing
+            age_process = subprocess.Popen(
+                [AGE, "-d", "-i", config.password_file, "-o", output_file], stdin=output_process.stdout
+            )
 
-        if not self.test_mode: # we need the zstd file, as zstd -t doesn't support stdin for testing
+        else:
+            age_process = subprocess.Popen(
+                [AGE, "-d", "-i", config.password_file], stdin=output_process.stdout, stdout=subprocess.PIPE
+            )
+
             zstd_process = subprocess.Popen(
                 [ZSTD, "-d", "-", "-o", output_file], stdin=age_process.stdout
             )
