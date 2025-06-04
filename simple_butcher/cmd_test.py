@@ -64,6 +64,8 @@ class Test:
             if zstd_process.returncode != 0:
                 raise OSError(output_stderr)
 
+            os.remove(output_file)
+
             # shutil.move(output_file, tar_input_file)
 
             # if tar_thread is None:
