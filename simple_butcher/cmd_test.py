@@ -34,7 +34,7 @@ class Test:
         self.pd = ProgressDisplay()
         # self.tar = TarWrapper(self.pd)
         self.sha256 = Sha256Wrapper()
-        self.decompression_v2 = DecompressionZstdAgeV2()
+        self.decompression_v2 = DecompressionZstdAgeV2(test_mode=True)
         # self.tapeinfo = TapeinfoWrapper(config)
         # self.mbuffer = MBufferWrapper(config)
         self.mtst = MTSTWrapper(config.tape, config.tape_dummy)
