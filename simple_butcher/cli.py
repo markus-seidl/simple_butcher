@@ -9,6 +9,7 @@ from cmd_backup import Backup
 from cmd_restore import Restore
 from cmd_list_backups import ListBackups
 from cmd_list_files import ListFiles
+from cmd_test import Test
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO, datefmt='%I:%M:%S')
 
@@ -54,6 +55,18 @@ def do():
     restore.add_argument("--exclude", help="tar exclude option", default=None, required=False, action='append',
                          nargs='+')
 
+    test = subparsers.add_parser("test")
+    test.add_argument("--backup-repository", help="Name of the backup repository", default="default")
+    test.add_argument("--backup-name", help="Name of the backup to restore, or number", required=True)
+    test.add_argument("--compression", help="only zstd_pipe is supported", default="zstd_pipe_v2")
+    test.add_argument("--dest", help="Dest directory", required=True)
+    test.add_argument("--password-file", help="Password in plain text as file", default="./password.age")
+    test.add_argument("--tempdir", help="Store tar output", default="./temp")
+    test.add_argument("--tape", help="Tape device", default="/dev/nst0")
+    test.add_argument("--tape-dummy", help="Used for local debugging, if specified the tape isn't used.")
+    test.add_argument("--exclude", help="tar exclude option", default=None, required=False, action='append',
+                         nargs='+')
+
     args = parser.parse_args()
 
     if args.command == 'backup':
@@ -64,6 +77,8 @@ def do():
         do_list_files(args)
     elif args.command == 'restore':
         do_restore(args)
+    elif args.command == 'test':
+        do_test(args)
     elif args.command == 'identify':
         do_identify(args)
     else:
@@ -93,6 +108,21 @@ def do_restore(args):
     )
 
     Restore(config).do()
+
+def do_test(args):
+    config = RestoreConfig(
+        backup_repository=args.backup_repository,
+        backup_name=args.backup_name,
+        compression=args.compression,
+        dest=args.dest,
+        password_file=args.password_file,
+        tempdir=args.tempdir,
+        tape=args.tape,
+        tape_dummy=args.tape_dummy,
+        excludes=args.exclude
+    )
+
+    Test(config).do()
 
 
 def do_backup(args):

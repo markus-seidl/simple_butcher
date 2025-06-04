@@ -15,8 +15,9 @@ class DecompressionZstdAgeV2:
     """
     """
 
-    def __init__(self):
+    def __init__(self, test_mode=False):
         super().__init__()
+        self.test_mode = test_mode
 
     def do(self, config: RestoreConfig, archive_volume_no: ArchiveVolumeNumber) -> str:
         output_file = config.tempdir + "/%09i.tar" % archive_volume_no.volume_no
@@ -38,9 +39,10 @@ class DecompressionZstdAgeV2:
             [AGE, "-d", "-i", config.password_file], stdin=output_process.stdout, stdout=subprocess.PIPE
         )
 
-        zstd_process = subprocess.Popen(
-            [ZSTD, "-d", "-", "-o", output_file], stdin=age_process.stdout
-        )
+        if not self.test_mode: # we need the zstd file, as zstd -t doesn't support stdin for testing
+            zstd_process = subprocess.Popen(
+                [ZSTD, "-d", "-", "-o", output_file], stdin=age_process.stdout
+            )
 
         start_piping = time.time()
         last_report_time = start_piping

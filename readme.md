@@ -25,6 +25,10 @@ Additionally, no "custom code" is used, `simple_butcher` only orchestrates other
 
 # FAQ
 
+* Does it work?
+
+Yes it works for me :)
+
 * Installation
 
 1) Download repository
@@ -41,15 +45,15 @@ Additionally, no "custom code" is used, `simple_butcher` only orchestrates other
 * Why are only segments written to tape, and no stream handled by python?
 
 This has multiple reasons: The first, and simple one, is, that only command line tools should be used and
-`simple_butcher` mostly acts as advanced shell script. In the end there is no data handling by code, only shell commands
+`simple_butcher` mostly acts as advanced shell script. In the end there is no data handling by code, only shell commands.
 The second reason is, that the tape is broken up in chunks that are individually compressed and encrypted.
 This means, that in case of a partial restore, only the necessary chunks need to be decrypted and decompressed.
 Also, in case of tape failure or loss, not all tapes are needed to restore the files that are on the
-"good/remaining" tapes.
+"good/remaining" tapes (well, tar will still complain, that you are missing parts, but would still work).
 
 Only fully ready chunks are written to the tape, preventing unnecessary spin up/down of the drive.
 The `mbuffer` command ensures a fast data delivery to the drive, if the hardware can handle it.
-In my tests at least a NVMe SSD is needed to keep up with the tape drive. LTO-6 drives can write at 160 MB/s, whereas
+In my tests at least a NVMe SSD is needed to keep up with the tape drive. LTO-6 drives can write at 160 MB/s.
 
 * What if I loose the sources to `simple_butcher`?
   That is not a problem, only the encryption key and the tape are needed to restore the files. All used tools are
@@ -67,3 +71,5 @@ In my tests at least a NVMe SSD is needed to keep up with the tape drive. LTO-6 
 
 * Full backups of a directory
 * Full restores (all files on the backup)
+* Full tests (all files on the backup, relies on zstd -t)
+
