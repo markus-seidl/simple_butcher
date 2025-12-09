@@ -5,10 +5,10 @@ import time
 import re
 
 from base_wrapper import Wrapper
-from config import BackupConfig
+from config import BackupTapeConfig
 from common import ArchiveVolumeNumber, report_performance, report_performance_bytes
 
-from config import BackupConfig
+from config import BackupTapeConfig
 from common import ArchiveVolumeNumber, file_size_format, get_safe_file_size
 from database import BackupRecord
 from exe_paths import ZSTD, AGE, TEE, MBUFFER, SHA256SUM, MD5SUM
@@ -28,7 +28,7 @@ class ZstdAgeV2(Compression):
         self.all_bytes_written = 0
         self.pd = pd
 
-    def do(self, config: BackupConfig, archive_volume_no: ArchiveVolumeNumber, input_file: str) -> (str, str):
+    def do(self, config: BackupTapeConfig, archive_volume_no: ArchiveVolumeNumber, input_file: str) -> (str, str):
         output_file = config.tempdir + "/%09i.tar.zst.age" % archive_volume_no.volume_no
 
         original_size = get_safe_file_size(input_file)

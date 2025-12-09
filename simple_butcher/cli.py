@@ -4,8 +4,8 @@ import argparse
 import datetime
 import os
 
-from config import BackupConfig, RestoreConfig, ListBackupConfig, ListFilesConfig
-from cmd_backup import Backup
+from config import BackupTapeConfig, RestoreConfig, ListBackupConfig, ListFilesConfig
+from cmd_backup_tape import BackupTape
 from cmd_restore import Restore
 from cmd_list_backups import ListBackups
 from cmd_list_files import ListFiles
@@ -19,22 +19,22 @@ def do():
     parser.add_argument("--database", help="Database directory", default="./db")
     subparsers = parser.add_subparsers(help="commands", dest="command")
 
-    backup = subparsers.add_parser("backup")
-    backup.add_argument("--backup-repository", help="Name of the backup repository", default="default")
-    backup.add_argument("--compression", help="only zstd_pipe is supported", default="zstd_pipe_v2")
-    backup.add_argument("--source", help="Source directory", required=True)
-    backup.add_argument("--password-file", help="Password in plain text as file", default="./password.age")
-    backup.add_argument("--tape-buffer", help="GBs left before changing to the next tape", default=10, type=int)
-    backup.add_argument("--tempdir", help="Store tar output", default="./temp")
-    backup.add_argument("--tape", help="Tape device", default="/dev/nst0")
-    backup.add_argument("--tape-dummy", help="Used for local debugging, if specified the tape isn't used.")
-    backup.add_argument("--chunk-size", help="Backups are written in single chunks. Size in GB", default=20, type=int)
-    backup.add_argument("--incremental-time", help="If set only includes files modified in the past n days",
-                        default=None, required=False, type=int)
-    backup.add_argument("--exclude", help="tar exclude option", default=None, required=False, action='append',
-                        nargs='+')
-    backup.add_argument("--description", help="Additional description for a backup", default="", type=str)
-    backup.add_argument("--zstd-level", help="Zstd Compression level", default=5, type=int)
+    backup_tape = subparsers.add_parser("backup_tape")
+    backup_tape.add_argument("--backup-repository", help="Name of the backup repository", default="default")
+    backup_tape.add_argument("--compression", help="only zstd_pipe is supported", default="zstd_pipe_v2")
+    backup_tape.add_argument("--source", help="Source directory", required=True)
+    backup_tape.add_argument("--password-file", help="Password in plain text as file", default="./password.age")
+    backup_tape.add_argument("--tape-buffer", help="GBs left before changing to the next tape", default=10, type=int)
+    backup_tape.add_argument("--tempdir", help="Store tar output", default="./temp")
+    backup_tape.add_argument("--tape", help="Tape device", default="/dev/nst0")
+    backup_tape.add_argument("--tape-dummy", help="Used for local debugging, if specified the tape isn't used.")
+    backup_tape.add_argument("--chunk-size", help="Backups are written in single chunks. Size in GB", default=20, type=int)
+    backup_tape.add_argument("--incremental-time", help="If set only includes files modified in the past n days",
+                             default=None, required=False, type=int)
+    backup_tape.add_argument("--exclude", help="tar exclude option", default=None, required=False, action='append',
+                             nargs='+')
+    backup_tape.add_argument("--description", help="Additional description for a backup", default="", type=str)
+    backup_tape.add_argument("--zstd-level", help="Zstd Compression level", default=5, type=int)
 
     list_backups = subparsers.add_parser("list-backups")
     list_backups.add_argument("--backup-repository", help="Name of the backup repository", default="default")
@@ -65,12 +65,12 @@ def do():
     test.add_argument("--tape", help="Tape device", default="/dev/nst0")
     test.add_argument("--tape-dummy", help="Used for local debugging, if specified the tape isn't used.")
     test.add_argument("--exclude", help="tar exclude option", default=None, required=False, action='append',
-                         nargs='+')
+                      nargs='+')
 
     args = parser.parse_args()
 
-    if args.command == 'backup':
-        do_backup(args)
+    if args.command == 'backup_tape':
+        do_backup_tape(args)
     elif args.command == "list-backups":
         do_list_backup(args)
     elif args.command == 'list-files':
@@ -109,6 +109,7 @@ def do_restore(args):
 
     Restore(config).do()
 
+
 def do_test(args):
     config = RestoreConfig(
         backup_repository=args.backup_repository,
@@ -125,8 +126,8 @@ def do_test(args):
     Test(config).do()
 
 
-def do_backup(args):
-    config = BackupConfig(
+def do_backup_tape(args):
+    config = BackupTapeConfig(
         backup_repository=args.backup_repository,
         backup_name=datetime.datetime.now().isoformat(timespec='seconds'),
         description=args.description,
@@ -147,7 +148,7 @@ def do_backup(args):
         config.password = f.readline().strip().strip(os.linesep)
 
     print(config.__repr__().replace(config.password, "<password>"))
-    Backup(config).do()
+    BackupTape(config).do()
 
 
 def do_list_backup(args):

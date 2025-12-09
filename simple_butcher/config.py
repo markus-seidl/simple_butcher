@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class BackupConfig:
+class BackupTapeConfig:
     backup_repository: str
     backup_name: str
     description: str

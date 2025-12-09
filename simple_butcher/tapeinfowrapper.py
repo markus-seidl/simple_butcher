@@ -4,7 +4,7 @@ import threading
 import os
 
 from base_wrapper import Wrapper
-from config import BackupConfig
+from config import BackupTapeConfig
 from common import ArchiveVolumeNumber
 from database import BackupRecord
 from exe_paths import SG_LOGS, TAPEINFO
@@ -26,7 +26,7 @@ class SizeInfo:
 
 
 class TapeinfoWrapper(Wrapper):
-    def __init__(self, config: BackupConfig):
+    def __init__(self, config: BackupTapeConfig):
         super().__init__()
         self.config = config
 
@@ -95,7 +95,7 @@ class TapeinfoWrapper(Wrapper):
 
 
 if __name__ == '__main__':
-    config = BackupConfig(
+    config = BackupTapeConfig(
         backup_repository=None,
         compression=None,
         source=None,

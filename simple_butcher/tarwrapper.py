@@ -7,7 +7,7 @@ import time
 from tqdm import tqdm
 
 from base_wrapper import Wrapper
-from config import BackupConfig, RestoreConfig
+from config import BackupTapeConfig, RestoreConfig
 from common import ArchiveVolumeNumber, file_size_format, get_safe_file_size
 from database import BackupRecord, BackupDatabase
 from exe_paths import TAR, FIND
@@ -34,7 +34,7 @@ class TarWrapper(Wrapper):
         self.pd = pd
 
     def main_backup_full(
-            self, config: BackupConfig, backup_bar, communication_file: str, database: BackupDatabase
+            self, config: BackupTapeConfig, backup_bar, communication_file: str, database: BackupDatabase
     ) -> (str, subprocess.Popen, threading.Thread):
         tar_output_file = config.tempdir + "/tar_output"
 
@@ -108,7 +108,7 @@ class TarWrapper(Wrapper):
         if process.returncode != 0:
             raise OSError(s_err)
 
-    def _build_incremental_file_list(self, config: BackupConfig, database: BackupDatabase) -> str:
+    def _build_incremental_file_list(self, config: BackupTapeConfig, database: BackupDatabase) -> str:
         find_cmd = FIND_CMD.format(
             cmd=FIND,
             source=config.source,

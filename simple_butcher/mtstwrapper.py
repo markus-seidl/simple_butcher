@@ -8,7 +8,7 @@ from tqdm import tqdm
 import re
 
 from base_wrapper import Wrapper
-from config import BackupConfig
+from config import BackupTapeConfig
 from common import ArchiveVolumeNumber, report_performance
 from database import BackupRecord
 from exe_paths import MT_ST

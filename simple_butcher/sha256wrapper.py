@@ -5,7 +5,7 @@ import os
 import time
 
 from base_wrapper import Wrapper
-from config import BackupConfig
+from config import BackupTapeConfig
 from common import ArchiveVolumeNumber
 from database import BackupRecord
 from exe_paths import SHA256SUM

@@ -3,22 +3,21 @@ import logging
 import shutil
 import time
 
-from config import BackupConfig
+from config import BackupTapeConfig
 from common import ArchiveVolumeNumber, tape_performance, get_safe_file_size
 from myzmq import SimpleMq
 from tarwrapper import TarWrapper
 from sha256wrapper import Sha256Wrapper
 from compression_zstdage_v2 import ZstdAgeV2
 from tapeinfowrapper import TapeinfoWrapper
-from database import BackupRecord, BackupDatabase, BackupDatabaseRepository, DB_ROOT, BackupInfo, \
-    INCREMENTAL_INDEX_FILENAME
+from database import BackupRecord, BackupDatabase, BackupDatabaseRepository, DB_ROOT, BackupInfo, INCREMENTAL_INDEX_FILENAME
 from mbufferwrapper import MBufferWrapper
 from mtstwrapper import MTSTWrapper
 from progressbar import ProgressDisplay, ByteTask
 
 
-class Backup:
-    def __init__(self, config: BackupConfig):
+class BackupTape:
+    def __init__(self, config: BackupTapeConfig):
         self.config = config
         self.com = SimpleMq(config.tempdir + "/tar_archive_done")
         self.pd = ProgressDisplay()
