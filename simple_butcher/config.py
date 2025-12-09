@@ -2,6 +2,21 @@ from dataclasses import dataclass
 
 
 @dataclass
+class BackupDriveConfig:
+    backup_repository: str
+    backup_name: str
+    description: str
+    compression: str
+    source: str
+    password_file: str
+    tempdir: str
+    chunk_size: int  # GB
+    incremental_time: int
+    excludes: [str]
+    zstd_level: int = 5
+
+
+@dataclass
 class BackupTapeConfig:
     backup_repository: str
     backup_name: str

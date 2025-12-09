@@ -5,10 +5,9 @@ import time
 import re
 
 from base_wrapper import Wrapper
-from config import BackupTapeConfig
 from common import ArchiveVolumeNumber, report_performance, report_performance_bytes
 
-from config import BackupTapeConfig
+from config import BackupDriveConfig
 from common import ArchiveVolumeNumber, file_size_format, get_safe_file_size
 from database import BackupRecord
 from exe_paths import ZSTD, AGE, TEE, MBUFFER, SHA256SUM, MD5SUM
@@ -18,7 +17,7 @@ from progressbar import ProgressDisplay, ByteTask
 
 class ZstdAgeV2(Compression):
     """
-    This class compresses, encrypts and writes to tape with zstd, age and mbuffer.
+    This class compresses, encrypts and writes to disk with zstd and age.
     Additionally, md5 is also computed.
     """
 
@@ -28,7 +27,7 @@ class ZstdAgeV2(Compression):
         self.all_bytes_written = 0
         self.pd = pd
 
-    def do(self, config: BackupTapeConfig, archive_volume_no: ArchiveVolumeNumber, input_file: str) -> (str, str):
+    def do(self, config: BackupDriveConfig, archive_volume_no: ArchiveVolumeNumber, input_file: str) -> (str, str):
         output_file = config.tempdir + "/%09i.tar.zst.age" % archive_volume_no.volume_no
 
         original_size = get_safe_file_size(input_file)
