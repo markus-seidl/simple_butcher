@@ -1,0 +1,11 @@
+[project]
+name = "simple_butcher"
+version = "0.2.0"
+description = ""
+requires-python = ">=3.13"
+dependencies = [
+    "pyzmq>=22.3",
+    "pycryptodome>=3.14",
+    "tqdm>=4.64",
+    "rich>=12.3.0",
+]
