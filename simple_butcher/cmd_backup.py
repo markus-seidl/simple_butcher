@@ -173,13 +173,6 @@ class Backup:
         else:
             archive_volume_no.bytes_written = self.compression_v2.all_bytes_written
 
-        # ratio = "%.2f" % (self.compression_v2.all_bytes_written / self.compression_v2.all_bytes_read)
-        # logging.info(
-        #     f"Statistics "
-        #     f"{file_size_format(self.compression_v2.all_bytes_read)} read, "
-        #     f"{file_size_format(self.compression_v2.all_bytes_written)} written = {ratio} "
-        # )
-
         tape_file_number, _, _ = self.mtst.current_position()
         tape_volume_serial = self.tapeinfo.volume_serial()
         tar_contents = self.update_backup_records(
@@ -188,40 +181,6 @@ class Backup:
         self.database.store(tar_contents)
 
         archive_volume_no.incr_volume_no()
-
-    # def compress_zstd_pipe(
-    #         self, archive_volume_no: ArchiveVolumeNumber, tar_archive_file: str,
-    #         tar_archive_file_size: float, tar_contents
-    # ):
-    #     logging.error("This code is not maintained, there will be dragons!")
-    #     compression_timer_start = time.time()
-    #     final_archive = self.compression.do(
-    #         config=self.config,
-    #         archive_volume_no=archive_volume_no,
-    #         input_file=tar_archive_file
-    #     )
-    #     final_archive_size = get_safe_file_size(final_archive)
-    #     self.sha256.start_calc_sum(final_archive)
-    #     compression_time = time.time() - compression_timer_start
-    #     logging.debug(
-    #         "Compression took: %3.1fs %s %s/s" % (
-    #             compression_time, compression_info(tar_archive_file_size, final_archive_size),
-    #             file_size_format(final_archive_size / compression_time)
-    #         )
-    #     )
-    #     # Determine if next tape is necessary
-    #     if self.config.tape_dummy:
-    #         archive_volume_no.bytes_written += int(final_archive_size)  # fake for no-tape
-    #     else:
-    #         archive_volume_no.bytes_written = self.tapeinfo.size_statistics().written_bytes
-    #
-    #     self.mbuffer.write(final_archive)
-    #
-    #     final_archive_sha = self.sha256.wait_for_sha_sum()
-    #     tar_contents = self.update_backup_records(tar_contents, final_archive_sha)
-    #     self.database.store(tar_contents)
-    #
-    #     archive_volume_no.incr_volume_no()
 
     def handle_tape_change(self, is_first_tape: bool = False):
         if is_first_tape:
@@ -268,33 +227,3 @@ class Backup:
         # on my LTO-6 tapes I can only write until 115GB are remaining, maybe do some --tapeaware on mbuffer?
         buffer_bytes = self.config.tape_buffer * 1024 * 1024 * 1024
         return file_size_bytes + buffer_bytes < remaining_bytes
-
-    # def prepare_incremental_file(self, current_backup: BackupDatabase) -> str:
-    #     """
-    #     Copies the incremental file from the base_backup_of to the current database. If it doesn't exist, TAR won't do
-    #     an incremental backup
-    #     """
-    #     if self.config.base_of_backup is None:
-    #         # logging.info("No base to incremental from.")
-    #         return None
-    #
-    #     repository = BackupDatabaseRepository(DB_ROOT, self.config.backup_repository)
-    #     past_backups = repository.list_backups()
-    #     if len(past_backups) == 0:
-    #         logging.info("No previous backup, starting fresh.")
-    #         return None
-    #
-    #     if self.config.base_of_backup >= len(past_backups) or self.config.base_of_backup < 0:
-    #         logging.info(f"Index out of range base_of_backup: {self.config.base_of_backup}. Starting fresh.")
-    #         return None
-    #
-    #     logging.info(f"Basing backup of {past_backups[self.config.base_of_backup]}...")
-    #     repository.copy_file(
-    #         past_backups[self.config.base_of_backup], current_backup.backup_name, INCREMENTAL_INDEX_FILENAME
-    #     )
-    #
-    #     return past_backups[self.config.base_of_backup]
-
-# def update_tqdm_n_desc(bar, n, desc):
-#     bar.set_description(desc)
-#     bar.update(n)
