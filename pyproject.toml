@@ -8,4 +8,5 @@ dependencies = [
     "pycryptodome>=3.14",
     "tqdm>=4.64",
     "rich>=12.3.0",
+    "beautifulsoup4>=4.14.3",
 ]

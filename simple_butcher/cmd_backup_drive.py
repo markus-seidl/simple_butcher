@@ -2,6 +2,7 @@ import os
 import logging
 import shutil
 import time
+import typing
 
 from config import BackupDriveConfig
 from common import ArchiveVolumeNumber, get_safe_file_size
@@ -40,10 +41,12 @@ class BackupDrive:
 
         while tar_thread.is_alive():
             if self.com.wait_for_signal():
-                archive_volume_no = self.handle_archive(archive_volume_no)
+                archive_volume_no, drive_changed = self.handle_archive(archive_volume_no)
+                if drive_changed:
+                    pass
 
         if os.path.exists(self.tar_output_file):
-            archive_volume_no = self.handle_archive(archive_volume_no, last_archive=True)
+            archive_volume_no, drive_changed = self.handle_archive(archive_volume_no, last_archive=True)
 
         self.post_backup_hook()
 
@@ -57,7 +60,7 @@ class BackupDrive:
             incremental_time=self.config.incremental_time,
             tape_start_index=0,
             description=self.config.description,
-            tape_serials=[]
+            tape_serials=[]  # TODO
         ))
         logging.info("Backup process has finished.")
 
@@ -74,7 +77,7 @@ class BackupDrive:
 
     def handle_archive(
             self, archive_volume_no: ArchiveVolumeNumber, last_archive: bool = False
-    ) -> ArchiveVolumeNumber:
+    ) -> typing.Tuple[ArchiveVolumeNumber, bool]:
         tar_archive_file = self.config.tempdir + "/files.tar.%09i" % archive_volume_no.volume_no
         shutil.move(self.tar_output_file, tar_archive_file)
         tar_archive_file_size = get_safe_file_size(tar_archive_file)

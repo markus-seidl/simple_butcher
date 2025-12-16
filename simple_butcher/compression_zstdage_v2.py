@@ -12,7 +12,7 @@ from config import BackupTapeConfig
 from common import ArchiveVolumeNumber, file_size_format, get_safe_file_size
 from database import BackupRecord
 from exe_paths import ZSTD, AGE, TEE, MBUFFER, SHA256SUM, MD5SUM
-from .compression import Compression
+from base_compression import Compression
 from progressbar import ProgressDisplay, ByteTask
 
 
