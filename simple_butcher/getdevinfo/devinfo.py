@@ -32,9 +32,8 @@ def get_serial_for_dir(directory: str) -> str:
 
         return darwin_find_serial(found_mp)
 
-    # elif sys.platform == "linux":
-    #     pass
-    #  TODO
+    if sys.platform == "linux":
+        return linux_get_uuid_for_dir(directory)
     else:
         raise RuntimeError("Unsupported platform: " + sys.platform)
 
@@ -51,3 +50,17 @@ def darwin_find_serial(disk) -> str:
         raise IOError("Exception: " + str(err) + " while running diskutil info")
 
     return plist['VolumeUUID'] if 'VolumeUUID' in plist else None
+
+
+def linux_get_uuid_for_dir(directory: str) -> str:
+    # The partition UUID is unique enough, so we can re-identify the partition when restoring the backup (or give the users hints, where
+    # to find the backup and on which disk)
+    result = subprocess.run(
+        ["findmnt", "-n", "-o", "UUID", "--target", directory],
+        check=True, capture_output=True, text=True
+    )
+    return result.stdout.strip()
+
+
+if __name__ == "__main__":
+    print(get_serial_for_dir(sys.argv[1]))
