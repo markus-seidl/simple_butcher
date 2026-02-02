@@ -15,7 +15,7 @@ from base_compression import Compression
 from progressbar import ProgressDisplay, ByteTask
 
 
-class ZstdAgeV2(Compression):
+class ZstdAgeDriveV2(Compression):
     """
     This class compresses, encrypts and writes to disk with zstd and age.
     Additionally, md5 is also computed.
@@ -43,57 +43,23 @@ class ZstdAgeV2(Compression):
             stderr=subprocess.STDOUT
         )
         age_process = subprocess.Popen(
-            [AGE, "-e", "-i", config.password_file], stdin=zstd_process.stdout, stdout=subprocess.PIPE
+            [AGE, "-e", "-i", "-o", output_file, config.password_file], stdin=zstd_process.stdout, stdout=subprocess.PIPE
         )
 
-        if config.tape_dummy is not None:
-            # output_process = subprocess.Popen(
-            #     f" > {output_file}", shell=True, stdin=age_process.stdout, stdout=subprocess.PIPE,
-            #     stderr=subprocess.PIPE
-            # )
-            # the above method doesn't work on newer macos/python, the method below seems to be slower.
-            output_process = subprocess.Popen(
-                ["/bin/dd", "bs=512K", f"of={output_file}"], stdin=age_process.stdout, stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
-        else:
-            output_process = subprocess.Popen(
-                [
-                    MBUFFER, "-P", "90", "-l", mbuffer_log, "-q", "-m", "5G", "-o", config.tape, "-s",
-                    "512k", "--md5", "--tapeaware"
-                ],
-                stdin=age_process.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            )
-
         start_piping = time.time()
+        output_stdout, output_stderr = age_process.communicate()
 
-        with self.pd.create_byte_bar(
-                "C/E", total_bytes=original_size, postfix=f"archive_no={archive_volume_no.volume_no}"
-        ) as p:
-            while True:
-                if config.tape_dummy is not None:
-                    bytes_written, _ = self.get_file_size(output_file)
-                else:
-                    bytes_written, _ = self.parse_mbuffer_progress_log(mbuffer_log)
-
-                p.update(completed=bytes_written)
-                time.sleep(0.1)
-
-                if output_process.poll() is not None:
-                    break
-
-        output_stdout, output_stderr = output_process.communicate()
-
-        if output_process.returncode != 0:
+        if age_process.returncode != 0:
             raise OSError(output_stderr)
 
-        bytes_written, _ = self.parse_mbuffer_progress_log(mbuffer_log)
-        # logging.info("C/E/xxx done with " + report_performance_bytes(start_piping, bytes_written))
+        bytes_written = get_safe_file_size(output_file)
+
+        logging.info("C/E/xxx done with " + report_performance_bytes(start_piping, bytes_written))
         self.all_bytes_written += bytes_written
 
         os.remove(input_file)
 
-        hash_out = self.parse_mbuffer_md5(mbuffer_log)
+        hash_out =
         if hash_out is None:
             return "None", "-"
 
@@ -179,7 +145,7 @@ class ZstdAgeV2(Compression):
 
 
 if __name__ == '__main__':
-    print(ZstdAgeV2(None).parse_mbuffer_summary_log("../mbuffer.log"))
+    print(ZstdAgeDriveV2(None).parse_mbuffer_summary_log("../mbuffer.log"))
     # config = BackupConfig(
     #     backup_repository="",
     #     backup_name="",

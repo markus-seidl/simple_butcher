@@ -13,6 +13,7 @@ class BackupDriveConfig:
     chunk_size: int  # GB
     incremental_time: int
     excludes: [str]
+    destination: str
     zstd_level: int = 5
 
 

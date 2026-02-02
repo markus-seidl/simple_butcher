@@ -3,13 +3,14 @@ import logging
 import shutil
 import time
 import typing
+import getdevinfo.devinfo as devinfo
 
 from config import BackupDriveConfig
 from common import ArchiveVolumeNumber, get_safe_file_size
 from myzmq import SimpleMq
 from tarwrapper import TarWrapper
 from sha256wrapper import Sha256Wrapper
-from compression_zstdage_v2 import ZstdAgeV2
+from compression_drive_zstdage import ZstdAgeDriveV2
 from database import BackupRecord, BackupDatabase, BackupDatabaseRepository, DB_ROOT, BackupInfo
 from progressbar import ProgressDisplay, ByteTask
 
@@ -23,8 +24,15 @@ class BackupDrive:
         self.tar_output_file = None
         self.tar = TarWrapper(self.pd)
         self.sha256 = Sha256Wrapper()
-        self.compression_v2 = ZstdAgeV2(self.pd)
+        self.compression_v2 = ZstdAgeDriveV2(self.pd)
         self.database = None
+        self.current_drive_serial = None
+
+    def request_user_to_change_drive(self):
+        print(f"Please change or ensure the correct drive is placed at {self.config.destination}")
+        input("Press Enter when ready...")
+        new_drive_serial = devinfo.get_serial_for_dir(self.config.source)
+        return new_drive_serial
 
     def do(self):
         self.database = BackupDatabase(DB_ROOT, self.config.backup_repository, self.config.backup_name)
@@ -34,6 +42,8 @@ class BackupDrive:
         self.tar_output_file, tar_process, tar_thread = self.tar.main_backup_full(
             self.config, None, self.com.communication_file, self.database
         )
+
+        self.current_drive_serial = devinfo.get_serial_for_dir(self.config.source)
 
         self.pre_backup_hook()
 
@@ -94,7 +104,7 @@ class BackupDrive:
         else:
             raise Exception("Unknown compression method: " + self.config.compression)
 
-        return archive_volume_no
+        return archive_volume_no, False
 
     def compress_zstdage_v2(
             self, archive_volume_no: ArchiveVolumeNumber, tar_archive_file: str,

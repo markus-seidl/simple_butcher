@@ -50,6 +50,7 @@ def do():
                              nargs='+')
     backup_drive.add_argument("--description", help="Additional description for a backup", default="", type=str)
     backup_drive.add_argument("--zstd-level", help="Zstd Compression level", default=5, type=int)
+    backup_drive.add_argument("--destination", help="Destination mount point", required=True)
 
     list_backups = subparsers.add_parser("list-backups")
     list_backups.add_argument("--backup-repository", help="Name of the backup repository", default="default")
@@ -180,7 +181,8 @@ def do_backup_drive(args):
         chunk_size=args.chunk_size,
         incremental_time=args.incremental_time,
         excludes=args.exclude,
-        zstd_level=args.zstd_level
+        zstd_level=args.zstd_level,
+        destination=args.destination,
     )
 
     with open(config.password_file, 'r') as f:
