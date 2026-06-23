@@ -1,0 +1,19 @@
+{
+  "defaults": {
+    "quota": 2
+  },
+  "paths": [
+    {
+      "path": "./dst/1"
+    },
+    {
+      "path": "./dst/2"
+    },
+    {
+      "path": "./dst/3"
+    },
+    {
+      "path": "./dst/4"
+    }
+  ]
+}

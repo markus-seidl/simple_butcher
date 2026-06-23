@@ -4,7 +4,8 @@ import argparse
 import datetime
 import os
 
-from config import BackupTapeConfig, BackupDriveConfig, RestoreConfig, ListBackupConfig, ListFilesConfig
+from config import BackupTapeConfig, BackupDriveConfig, RestoreConfig, ListBackupConfig, ListFilesConfig, \
+    DestinationConfig
 from cmd_backup_tape import BackupTape
 from cmd_backup_drive import BackupDrive
 from cmd_restore import Restore
@@ -182,7 +183,8 @@ def do_backup_drive(args):
         incremental_time=args.incremental_time,
         excludes=args.exclude,
         zstd_level=args.zstd_level,
-        destination=args.destination,
+        destination_config_file=args.destination_config,
+        destination_config=DestinationConfig.load(args.destination_config),
     )
 
     with open(config.password_file, 'r') as f:

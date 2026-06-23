@@ -47,7 +47,7 @@ class BackupDrive:
 
         self.pre_backup_hook()
 
-        archive_volume_no = ArchiveVolumeNumber(tape_no=0, volume_no=0, block_position=0, bytes_written=0)
+        archive_volume_no = ArchiveVolumeNumber(tape_no=0, volume_no=0, block_position=0, bytes_written=0, current_path_idx=0)
 
         while tar_thread.is_alive():
             if self.com.wait_for_signal():

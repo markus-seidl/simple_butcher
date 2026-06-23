@@ -27,6 +27,9 @@ class ZstdAgeDriveV2(Compression):
         self.all_bytes_written = 0
         self.pd = pd
 
+    def determine_output_file(self, config: BackupDriveConfig, archive_volume_no: ArchiveVolumeNumber):
+        pass
+
     def do(self, config: BackupDriveConfig, archive_volume_no: ArchiveVolumeNumber, input_file: str) -> (str, str):
         output_file = config.tempdir + "/%09i.tar.zst.age" % archive_volume_no.volume_no
 
