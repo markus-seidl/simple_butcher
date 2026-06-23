@@ -13,7 +13,8 @@ class BackupDriveConfig:
     chunk_size: int  # GB
     incremental_time: int
     excludes: [str]
-    destination: str
+    destination_config_file: str
+    destination_config: str
     zstd_level: int = 5
 
 
@@ -63,3 +64,4 @@ class ListFilesConfig:
 class IdentifyConfig:
     tape: str
     tape_dummy: str
+

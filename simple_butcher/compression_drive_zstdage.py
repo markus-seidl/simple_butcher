@@ -10,7 +10,7 @@ from common import ArchiveVolumeNumber, report_performance, report_performance_b
 from config import BackupDriveConfig
 from common import ArchiveVolumeNumber, file_size_format, get_safe_file_size
 from database import BackupRecord
-from exe_paths import ZSTD, AGE, TEE, MBUFFER, SHA256SUM, MD5SUM
+from exe_paths import ZSTD, AGE, TEE, MBUFFER, SHA512SUM, MD5SUM
 from base_compression import Compression
 from progressbar import ProgressDisplay, ByteTask
 
@@ -43,7 +43,7 @@ class ZstdAgeDriveV2(Compression):
             stderr=subprocess.STDOUT
         )
         age_process = subprocess.Popen(
-            [AGE, "-e", "-i", "-o", output_file, config.password_file], stdin=zstd_process.stdout, stdout=subprocess.PIPE
+            [AGE, "-e", "-i", config.password_file, "-o", output_file], stdin=zstd_process.stdout, stdout=subprocess.PIPE
         )
 
         start_piping = time.time()

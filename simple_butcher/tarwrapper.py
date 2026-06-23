@@ -38,6 +38,9 @@ class TarWrapper(Wrapper):
     ) -> tuple[str, subprocess.Popen, threading.Thread]:
         tar_output_file = config.tempdir + "/tar_output"
 
+        if not os.path.exists(config.tempdir):
+            os.makedirs(config.tempdir)
+
         if os.path.exists(tar_output_file):
             os.remove(tar_output_file)
 
@@ -130,7 +133,7 @@ class TarWrapper(Wrapper):
 
         _, s_err = process.communicate()
         if process.returncode != 0:
-            raise OSError("Error might be an artefact if files changed while reading, check tar.log: " + s_err)
+            raise OSError("Error might be an artefact if files changed while reading, check tar.log: " + s_err.decode("UTF-8"))
 
     def _update_tar_progressbar(self, backup_bar, process, tar_log_file, output_file, chunk_size: int):
         last_size = -1

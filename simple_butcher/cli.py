@@ -50,7 +50,7 @@ def do():
                              nargs='+')
     backup_drive.add_argument("--description", help="Additional description for a backup", default="", type=str)
     backup_drive.add_argument("--zstd-level", help="Zstd Compression level", default=5, type=int)
-    backup_drive.add_argument("--destination", help="Destination mount point", required=True)
+    backup_drive.add_argument("--destination_config", help="Destination configuration", required=True)
 
     list_backups = subparsers.add_parser("list-backups")
     list_backups.add_argument("--backup-repository", help="Name of the backup repository", default="default")

@@ -130,6 +130,6 @@ class BackupDrive:
             record.hash_type = archive_hash[0]
             record.archive_hash = archive_hash[1]
             record.tape_file_number = -1
-            record.tape_volume_serial = None
+            record.drive_volume_serial = self.current_drive_serial
 
         return backup_records
