@@ -1,0 +1,10 @@
+{
+  "defaults": {
+    "quota": 0.01
+  },
+  "paths": [
+    {
+      "path": "./dst/1"
+    }
+  ]
+}

@@ -24,7 +24,7 @@ class DestinationConfig:
         for entry in data.get("paths", []) or []:
             quota = entry.get("quota")
             if quota == "" or quota is None:
-                quota = None
+                quota = default_quota
             paths.append(DestinationPath(path=entry["path"], quota=quota))
 
         return DestinationConfig(default_quota=default_quota, paths=paths)

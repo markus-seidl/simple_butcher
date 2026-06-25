@@ -8,6 +8,7 @@ import getdevinfo.devinfo as devinfo
 from config import BackupDriveConfig
 from common import ArchiveVolumeNumber, get_safe_file_size
 from myzmq import SimpleMq
+from simple_butcher.config import DestinationPath
 from tarwrapper import TarWrapper
 from sha256wrapper import Sha256Wrapper
 from compression_drive_zstdage import ZstdAgeDriveV2
@@ -28,12 +29,6 @@ class BackupDrive:
         self.database = None
         self.current_drive_serial = None
 
-    def request_user_to_change_drive(self):
-        print(f"Please change or ensure the correct drive is placed at {self.config.destination}")
-        input("Press Enter when ready...")
-        new_drive_serial = devinfo.get_serial_for_dir(self.config.source)
-        return new_drive_serial
-
     def do(self):
         self.database = BackupDatabase(DB_ROOT, self.config.backup_repository, self.config.backup_name)
         self.database.start_backup()
@@ -43,7 +38,7 @@ class BackupDrive:
             self.config, None, self.com.communication_file, self.database
         )
 
-        self.current_drive_serial = devinfo.get_serial_for_dir(self.config.source)
+        self.current_drive_serial = devinfo.get_serial_for_dir(self.config.destination_config.paths[0].path)
 
         self.pre_backup_hook()
 
@@ -110,6 +105,21 @@ class BackupDrive:
             self, archive_volume_no: ArchiveVolumeNumber, tar_archive_file: str,
             tar_archive_file_size: float, tar_contents
     ):
+        if not self.fits_on_drive_path(archive_volume_no, tar_archive_file_size):
+            if len(self.config.destination_config.paths) == 1:  # drive mode
+                self.handle_drive_change()
+            else:  # directory mode
+                paths = self.config.destination_config.paths
+                idx = archive_volume_no.current_path_idx
+                while idx < len(paths) and not self.has_quota_left(paths[idx], tar_archive_file_size):
+                    idx += 1
+
+                if idx >= len(paths):
+                    raise OSError("All destination paths have reached their configured quota.")
+
+                archive_volume_no.current_path_idx = idx
+                logging.info(f"Switching to path {paths[idx]}.")
+
         final_archive_hash = self.compression_v2.do(
             config=self.config,
             archive_volume_no=archive_volume_no,
@@ -133,3 +143,64 @@ class BackupDrive:
             record.drive_volume_serial = self.current_drive_serial
 
         return backup_records
+
+    def fits_on_drive_path(self, archive_volume_no: ArchiveVolumeNumber, tar_archive_file_size: float | int) -> bool:
+        dest_config = self.config.destination_config
+        if dest_config is None or not dest_config.paths:
+            raise ValueError("No destination paths configured!")
+
+        paths = dest_config.paths
+
+        if len(paths) == 1:
+            # drive mode - need to change disk
+            return self.has_quota_left(paths[0], tar_archive_file_size)
+        else:  # directory mode
+            idx = archive_volume_no.current_path_idx
+            old_idx = idx
+            while idx < len(paths) and not self.has_quota_left(paths[idx], tar_archive_file_size):
+                idx += 1
+
+            if idx >= len(paths):
+                return False
+
+            return idx == old_idx
+
+    def has_quota_left(self, dest: DestinationPath, tar_archive_file_size: float | int) -> bool:
+        os.makedirs(dest.path, exist_ok=True)
+
+        quota = dest.quota
+        if quota is None or quota <= 0:
+            raise OSError(f"Quota must be a positive number and exist for {dest.path}")
+
+        if quota <= 1:
+            # Fraction of the filesystem that may be used.
+            total, used, _ = shutil.disk_usage(dest.path)
+            return ((used + tar_archive_file_size) / total) < quota
+
+        # Absolute limit in GB on the bytes written into the destination directory.
+        limit_bytes = quota * 1024 ** 3
+        return self.get_directory_size(dest.path) + tar_archive_file_size < limit_bytes
+
+    @staticmethod
+    def get_directory_size(path: str) -> int:
+        total = 0
+        for root, _, files in os.walk(path):
+            for name in files:
+                file_path = os.path.join(root, name)
+                if os.path.exists(file_path):
+                    total += os.path.getsize(file_path)
+        return total
+
+    def handle_drive_change(self):
+        drive_serial_before = self.current_drive_serial
+        while True:
+            logging.warning("Next archive will not fit on drive, please change it and press any key...")
+            logging.warning(f"Remove tape {drive_serial_before}")
+            input("Press enter key")
+
+            drive_serial_after = devinfo.get_serial_for_dir(self.config.destination_config.paths[0].path)
+            if drive_serial_after == drive_serial_before:
+                logging.warning(f"Tape serial before {drive_serial_before} matches the current tape serial {drive_serial_after}.")
+            else:
+                self.current_drive_serial = devinfo.get_serial_for_dir(self.config.destination_config.paths[0].path)
+                break

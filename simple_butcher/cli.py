@@ -190,6 +190,12 @@ def do_backup_drive(args):
     with open(config.password_file, 'r') as f:
         config.password = f.readline().strip().strip(os.linesep)
 
+    # Plausibility Check for chuck and destination
+    for dest in config.destination_config.paths:
+        if config.chunk_size > dest.quota > 1: # 1 needed because of percentual quota
+            raise ValueError(f"Destination path {dest.path} has quota {dest.quota} and chunk size {config.chunk_size} exceeds quota.")
+
+
     print(config.__repr__().replace(config.password, "<password>"))
     BackupDrive(config).do()
 

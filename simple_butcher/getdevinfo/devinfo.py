@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 import typing
@@ -22,6 +23,8 @@ def _parse_mounts() -> typing.List:
 
 
 def get_serial_for_dir(directory: str) -> str:
+    directory = os.path.abspath(directory)
+
     if sys.platform == "darwin":
         mp = _parse_mounts()
 
