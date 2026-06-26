@@ -6,7 +6,7 @@ import typing
 import getdevinfo.devinfo as devinfo
 
 from config import BackupDriveConfig
-from common import ArchiveVolumeNumber, get_safe_file_size
+from common import ArchiveVolumeNumber, get_safe_file_size, file_size_format
 from myzmq import SimpleMq
 from simple_butcher.config import DestinationPath
 from tarwrapper import TarWrapper
@@ -153,7 +153,8 @@ class BackupDrive:
 
         if len(paths) == 1:
             # drive mode - need to change disk
-            return self.has_quota_left(paths[0], tar_archive_file_size)
+            ret = self.has_quota_left(paths[0], tar_archive_file_size)
+            return ret
         else:  # directory mode
             idx = archive_volume_no.current_path_idx
             old_idx = idx
@@ -163,7 +164,8 @@ class BackupDrive:
             if idx >= len(paths):
                 return False
 
-            return idx == old_idx
+            ret = idx == old_idx
+            return ret
 
     def has_quota_left(self, dest: DestinationPath, tar_archive_file_size: float | int) -> bool:
         os.makedirs(dest.path, exist_ok=True)
@@ -175,11 +177,20 @@ class BackupDrive:
         if quota <= 1:
             # Fraction of the filesystem that may be used.
             total, used, _ = shutil.disk_usage(dest.path)
-            return ((used + tar_archive_file_size) / total) < quota
+            ret = ((used + tar_archive_file_size) / total) < quota
+            logging.info(
+                f"Quota left on {dest.path}: {ret} "
+                f"({file_size_format(used)} + {file_size_format(tar_archive_file_size)} / {file_size_format(total)} "
+                f"= {(used + tar_archive_file_size) / total} < {quota})")
+            return ret
 
         # Absolute limit in GB on the bytes written into the destination directory.
         limit_bytes = quota * 1024 ** 3
-        return self.get_directory_size(dest.path) + tar_archive_file_size < limit_bytes
+        dir_size = self.get_directory_size(dest.path)
+        ret = dir_size + tar_archive_file_size < limit_bytes
+        logging.info(f"Quota left on {dest.path}: {ret} ({file_size_format(dir_size)} + {file_size_format(tar_archive_file_size)} "
+                     f"= {file_size_format(dir_size + tar_archive_file_size)} < {limit_bytes})")
+        return ret
 
     @staticmethod
     def get_directory_size(path: str) -> int:

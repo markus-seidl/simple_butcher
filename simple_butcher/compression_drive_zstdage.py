@@ -160,29 +160,3 @@ class ZstdAgeDriveV2(Compression):
     def overall_compression_ratio(self) -> float:
         return self.all_bytes_read / float(self.all_bytes_written)
 
-
-if __name__ == '__main__':
-    print(ZstdAgeDriveV2(None).parse_mbuffer_summary_log("../mbuffer.log"))
-    # config = BackupConfig(
-    #     backup_repository="",
-    #     backup_name="",
-    #     description="",
-    #     compression="",
-    #     source="",
-    #     password_file="../password.age",
-    #     tape_buffer=0,
-    #     tempdir="../temp/",
-    #     tape="",
-    #     tape_dummy="../temp/blah",
-    #     chunk_size=0,
-    #     incremental_time=0,
-    #     excludes=None
-    # )
-    # # config: BackupConfig, archive_volume_no: ArchiveVolumeNumber, input_file: str
-    # ZstdAgeV2().do(
-    #     config,
-    #     archive_volume_no=ArchiveVolumeNumber(
-    #         tape_no=0, volume_no=0, block_position=0, bytes_written=0
-    #     ),
-    #     input_file="../temp_src/blah1"
-    # )
