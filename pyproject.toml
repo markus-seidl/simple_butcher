@@ -2,7 +2,7 @@
 name = "simple_butcher"
 version = "0.2.0"
 description = ""
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "pyzmq>=22.3",
     "pycryptodome>=3.14",
