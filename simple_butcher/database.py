@@ -23,6 +23,8 @@ class BackupRecord:
     tar_line: str
     tape_file_number: int = -1
     tape_volume_serial: str = ""
+    drive_number: int = -1
+    drive_volume_serial: str = ""
 
     def to_json(self):
         return json.dumps(dataclasses.asdict(self))
@@ -37,6 +39,8 @@ class BackupRecord:
             tar_line=j['tar_line'],
             tape_file_number=j['tape_file_number'] if 'tape_file_number' in j else None,
             tape_volume_serial=j['tape_volume_serial'] if 'tape_volume_serial' in j else None,
+            drive_number=j['drive_number'] if 'drive_number' in j else None,
+            drive_volume_serial=j['drive_volume_serial'] if 'drive_volume_serial' in j else None,
         )
 
 

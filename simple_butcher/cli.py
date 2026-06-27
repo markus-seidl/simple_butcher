@@ -4,8 +4,10 @@ import argparse
 import datetime
 import os
 
-from config import BackupTapeConfig, RestoreConfig, ListBackupConfig, ListFilesConfig
+from config import BackupTapeConfig, BackupDriveConfig, RestoreConfig, ListBackupConfig, ListFilesConfig, \
+    DestinationConfig
 from cmd_backup_tape import BackupTape
+from cmd_backup_drive import BackupDrive
 from cmd_restore import Restore
 from cmd_list_backups import ListBackups
 from cmd_list_files import ListFiles
@@ -35,6 +37,21 @@ def do():
                              nargs='+')
     backup_tape.add_argument("--description", help="Additional description for a backup", default="", type=str)
     backup_tape.add_argument("--zstd-level", help="Zstd Compression level", default=5, type=int)
+
+    backup_drive = subparsers.add_parser("backup_drive")
+    backup_drive.add_argument("--backup-repository", help="Name of the backup repository", default="default")
+    backup_drive.add_argument("--compression", help="only zstd_pipe is supported", default="zstd_pipe_v2")
+    backup_drive.add_argument("--source", help="Source directory", required=True)
+    backup_drive.add_argument("--password-file", help="Password in plain text as file", default="./password.age")
+    backup_drive.add_argument("--tempdir", help="Store tar output", default="./temp")
+    backup_drive.add_argument("--chunk-size", help="Backups are written in single chunks. Size in GB", default=20, type=int)
+    backup_drive.add_argument("--incremental-time", help="If set only includes files modified in the past n days",
+                             default=None, required=False, type=int)
+    backup_drive.add_argument("--exclude", help="tar exclude option", default=None, required=False, action='append',
+                             nargs='+')
+    backup_drive.add_argument("--description", help="Additional description for a backup", default="", type=str)
+    backup_drive.add_argument("--zstd-level", help="Zstd Compression level", default=5, type=int)
+    backup_drive.add_argument("--destination_config", help="Destination configuration", required=True)
 
     list_backups = subparsers.add_parser("list-backups")
     list_backups.add_argument("--backup-repository", help="Name of the backup repository", default="default")
@@ -71,6 +88,8 @@ def do():
 
     if args.command == 'backup_tape':
         do_backup_tape(args)
+    elif args.command == 'backup_drive':
+        do_backup_drive(args)
     elif args.command == "list-backups":
         do_list_backup(args)
     elif args.command == 'list-files':
@@ -149,6 +168,36 @@ def do_backup_tape(args):
 
     print(config.__repr__().replace(config.password, "<password>"))
     BackupTape(config).do()
+
+
+def do_backup_drive(args):
+    config = BackupDriveConfig(
+        backup_repository=args.backup_repository,
+        backup_name=datetime.datetime.now().isoformat(timespec='seconds'),
+        description=args.description,
+        compression=args.compression,
+        source=args.source,
+        password_file=args.password_file,
+        tempdir=args.tempdir,
+        chunk_size=args.chunk_size,
+        incremental_time=args.incremental_time,
+        excludes=args.exclude,
+        zstd_level=args.zstd_level,
+        destination_config_file=args.destination_config,
+        destination_config=DestinationConfig.load(args.destination_config),
+    )
+
+    with open(config.password_file, 'r') as f:
+        config.password = f.readline().strip().strip(os.linesep)
+
+    # Plausibility Check for chuck and destination
+    for dest in config.destination_config.paths:
+        if config.chunk_size > dest.quota > 1: # 1 needed because of percentual quota
+            raise ValueError(f"Destination path {dest.path} has quota {dest.quota} and chunk size {config.chunk_size} exceeds quota.")
+
+
+    print(config.__repr__().replace(config.password, "<password>"))
+    BackupDrive(config).do()
 
 
 def do_list_backup(args):

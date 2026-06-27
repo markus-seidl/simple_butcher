@@ -7,7 +7,7 @@ import time
 from tqdm import tqdm
 
 from base_wrapper import Wrapper
-from config import BackupTapeConfig, RestoreConfig
+from config import BackupTapeConfig, BackupDriveConfig, RestoreConfig
 from common import ArchiveVolumeNumber, file_size_format, get_safe_file_size
 from database import BackupRecord, BackupDatabase
 from exe_paths import TAR, FIND
@@ -34,9 +34,12 @@ class TarWrapper(Wrapper):
         self.pd = pd
 
     def main_backup_full(
-            self, config: BackupTapeConfig, backup_bar, communication_file: str, database: BackupDatabase
-    ) -> (str, subprocess.Popen, threading.Thread):
+            self, config: BackupTapeConfig | BackupDriveConfig, backup_bar, communication_file: str, database: BackupDatabase
+    ) -> tuple[str, subprocess.Popen, threading.Thread]:
         tar_output_file = config.tempdir + "/tar_output"
+
+        if not os.path.exists(config.tempdir):
+            os.makedirs(config.tempdir)
 
         if os.path.exists(tar_output_file):
             os.remove(tar_output_file)
@@ -130,7 +133,7 @@ class TarWrapper(Wrapper):
 
         _, s_err = process.communicate()
         if process.returncode != 0:
-            raise OSError("Error might be an artefact if files changed while reading, check tar.log: " + s_err)
+            raise OSError("Error might be an artefact if files changed while reading, check tar.log: " + s_err.decode("UTF-8"))
 
     def _update_tar_progressbar(self, backup_bar, process, tar_log_file, output_file, chunk_size: int):
         last_size = -1

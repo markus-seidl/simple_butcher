@@ -8,7 +8,7 @@ from config import RestoreConfig
 from common import ArchiveVolumeNumber, file_size_format, report_performance_bytes
 from database import BackupRecord
 from exe_paths import ZSTD, AGE, TEE, MBUFFER, SHA256SUM, MD5SUM
-from compression import Compression
+from compression_zstdage_v2 import Compression
 
 
 class DecompressionZstdAgeV2:

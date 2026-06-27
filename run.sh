@@ -2,7 +2,7 @@
 
 #git pull --rebase
 
-source venv/bin/activate
+source .venv/bin/activate
 
 __python=$(which python3)
 

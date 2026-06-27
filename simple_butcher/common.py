@@ -58,6 +58,8 @@ class ArchiveVolumeNumber:
     volume_no: int
     block_position: int
     bytes_written: int
+    device_serial: str = None
+    current_path_idx: int = -1
 
     def incr_tape_no(self):
         self.tape_no += 1
