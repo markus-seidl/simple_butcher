@@ -180,7 +180,7 @@ class BackupDrive:
             logging.info(
                 f"Quota left on {dest.path}: {ret} "
                 f"({file_size_format(used)} + {file_size_format(tar_archive_file_size)} / {file_size_format(total)} "
-                f"= {(used + tar_archive_file_size) / total} < {quota})")
+                f"= {(used + tar_archive_file_size) / total:0.3F} < {quota})")
             return ret
 
         # Absolute limit in GB on the bytes written into the destination directory.
