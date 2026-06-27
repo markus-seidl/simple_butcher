@@ -69,18 +69,18 @@ class ZstdAgeDriveV2(Compression):
 
         os.remove(input_file)
 
-        hash_process = subprocess.Popen(
-            [MD5SUM, output_file], stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-        hash_stdout, hash_stderr = hash_process.communicate()
+        # hash_process = subprocess.Popen(
+        #     [MD5SUM, output_file], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        # )
+        # hash_stdout, hash_stderr = hash_process.communicate()
         
-        if hash_process.returncode != 0:
-            logging.warning(f"MD5 hash calculation failed: {hash_stderr}")
-            return "None", "-"
+        # if hash_process.returncode != 0:
+        #     logging.warning(f"MD5 hash calculation failed: {hash_stderr}")
+        #     return "None", "-"
         
-        hash_out = hash_stdout.decode('utf-8').strip().split()[0]
+        # hash_out = hash_stdout.decode('utf-8').strip().split()[0]
         
-        return "md5sum", hash_out
+        return "none", "-"
 
     def parse_mbuffer_progress_log(self, mbuffer_log: str) -> (int, int):
         # mbuffer: in @  164 MiB/s, out @  164 MiB/s, 3102 MiB total, buffer  99% full
