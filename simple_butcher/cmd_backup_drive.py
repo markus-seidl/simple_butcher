@@ -5,10 +5,9 @@ import time
 import typing
 import getdevinfo.devinfo as devinfo
 
-from config import BackupDriveConfig
+from config import BackupDriveConfig, DestinationPath
 from common import ArchiveVolumeNumber, get_safe_file_size, file_size_format
 from myzmq import SimpleMq
-from simple_butcher.config import DestinationPath
 from tarwrapper import TarWrapper
 from sha256wrapper import Sha256Wrapper
 from compression_drive_zstdage import ZstdAgeDriveV2
